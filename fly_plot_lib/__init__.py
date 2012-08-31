@@ -1,2 +1,2 @@
-import fly_plot_lib
+import plot
 import set_params
