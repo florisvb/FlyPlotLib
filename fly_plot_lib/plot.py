@@ -120,43 +120,6 @@ def adjust_spines(ax,spines, spine_locations={}, smart_bounds=True, xticks=None,
         #line.set_markersize(6)
         line.set_markeredgewidth(1)
                 
-                
-        
-def adjust_spines_example():
-    
-    x = np.linspace(0,100,100)
-    y = x**2
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(x,y)
-    adjust_spines(ax, ['left', 'bottom'])
-    fig.savefig('adjust_spines_example.pdf', format='pdf')
-    
-    
-def adjust_spines_example_with_custom_ticks():
-
-    x = np.linspace(0,100,100)
-    y = x**2
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.plot(x,y)
-    
-    # set limits
-    ax.set_xlim(0,100)
-    ax.set_ylim(0,20000)
-    
-    # set custom ticks and tick labels
-    xticks = [0, 10, 25, 50, 71, 100] # custom ticks, should be a list
-    adjust_spines(ax, ['left', 'bottom'], xticks=xticks, smart_bounds=True)
-    
-    ax.set_xlabel('x axis, custom ticks\ncoooool!')
-    
-    fig.savefig('adjust_spines_custom_ticks_example.pdf', format='pdf')
-
-
-
 ###################################################################################################
 # Colorline
 ###################################################################################################
@@ -196,42 +159,54 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
         
         ax.add_collection(lc)
 
-def colorline_example():
-    
-    def tent(x):
-        """
-        A simple tent map
-        """
-        if x < 0.5:
-            return x
+###################################################################################################
+# Colorline with heading
+###################################################################################################
+
+# plot a line in x and y with changing colors defined by z, and optionally changing linewidths defined by linewidth
+def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', norm=None, edgecolors='none', alpha=1, indices_to_plot=None):
+        
+        # angles must be in degrees
+        # (x,y) defines tip
+
+        cmap = plt.get_cmap(colormap)
+        
+        if norm is None:
+            norm = plt.Normalize(np.min(color), np.max(color))
         else:
-            return -1.0*x + 1
-    
-    pi = np.pi
-    t = np.linspace(0, 1, 200)
-    y = np.sin(2*pi*t)
-    z = np.array([tent(x) for x in t]) 
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    
-    # standard colorline
-    colorline(ax,t,y,z)
-    
-    # colorline with changing widths, shifted in x
-    colorline(ax,t+0.5,y,z,linewidth=z*5)
-    
-    # colorline with points, shifted in x
-    colorline(ax,t+1,y,z, linestyle='dotted')
-    
-    # set the axis to appropriate limits
-    adjust_spines(ax, ['left', 'bottom'])
-    ax.set_xlim(0,2)
-    ax.set_ylim(0,1.5)
-       
-    fig.savefig('colorline_example.pdf', format='pdf')
-    
-    
+            norm = plt.Normalize(norm[0], norm[1])
+            
+        if indices_to_plot is None:
+            indices_to_plot = np.arange(0, len(x))
+        
+        flycons = []
+        for i in indices_to_plot:
+            center = [x[i], y[i]]
+            
+            if type(size_radius) is list: r = size_radius[i]
+            else: r = size_radius
+            
+            if type(size_radius) is list: angle_swept = size_radius[i]
+            else: angle_swept = size_radius
+            theta1 = orientation[i] - size_angle/2.
+            theta2 = orientation[i] + size_angle/2.
+            
+            wedge = patches.Wedge(center, r, theta1, theta2)
+            flycons.append(wedge)
+            
+        # add collection and color it
+        pc = PatchCollection(flycons, cmap=cmap, norm=norm)
+        
+        # set properties for collection
+        pc.set_edgecolors(edgecolors)
+        if type(color) is list or type(color) is np.array or type(color) is np.ndarray:
+            pc.set_array(color)
+        else:
+            pc.set_facecolors(color)
+        pc.set_alpha(alpha)
+        
+        ax.add_collection(pc)
+        
 ###################################################################################################
 # Histograms
 ###################################################################################################
@@ -384,29 +359,6 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
     elif return_vals and bootstrap_std is True:
         return bins, data_hist_list, data_hist_std_list, data_curve_list
     
-def histogram_example():
-    
-    # generate a list of various y data, from three random gaussian distributions
-    y_data_list = []
-    for i in range(3):
-        mean = np.random.random()*10
-        std = 3
-        ndatapoints = 500
-        y_data = gaussian_distribution.rvs(loc=mean, scale=std, size=ndatapoints)
-        y_data_list.append(y_data)
-        
-    nbins = 40 # note: if show_smoothed=True with default butter filter, nbins needs to be > ~15 
-    bins = np.linspace(-10,30,nbins)
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    
-    histogram(ax, y_data_list, bins=bins, bin_width_ratio=0.8, colors=['green', 'black', 'orange'], edgecolor='none', bar_alpha=1, curve_fill_alpha=0.4, curve_line_alpha=0, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=True, normed_occurences=False, bootstrap_std=False, exponential_histogram=False)
-    
-    adjust_spines(ax, ['left', 'bottom'])
-    
-    fig.savefig('histogram_example.pdf', format='pdf')
-    
 ###################################################################################################
 # Boxplots
 ###################################################################################################
@@ -474,57 +426,6 @@ def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth
                 x_arr_outliers = x*np.ones_like(y_data_outliers)
                 ax.plot(x_arr_outliers, y_data_outliers, '.', markerfacecolor='gray', markeredgecolor='none', markersize=1)
         
-    
-def boxplot_example():
-    # box plot with colorline as histogram
-
-    # generate a list of various y data, from three random gaussian distributions
-    x_data = np.linspace(0,20,5)
-    y_data_list = []
-    for i in range(len(x_data)):
-        mean = np.random.random()*10
-        std = 3
-        ndatapoints = 500
-        y_data = gaussian_distribution.rvs(loc=mean, scale=std, size=ndatapoints)
-        y_data_list.append(y_data)
-        
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    
-    boxplot(ax, x_data, y_data_list)
-    adjust_spines(ax, ['left', 'bottom'])
-    
-    ax.set_xlabel('x axis')
-    ax.set_ylabel('y axis')
-    
-    fig.savefig('boxplot_example.pdf', format='pdf')    
-    
-def boxplot_classic_example():
-    # classic boxplot look (no colorlines)
-        
-    # generate a list of various y data, from three random gaussian distributions
-    x_data = np.linspace(0,20,5)
-    y_data_list = []
-    for i in range(len(x_data)):
-        mean = np.random.random()*10
-        std = 3
-        ndatapoints = 500
-        y_data = gaussian_distribution.rvs(loc=mean, scale=std, size=ndatapoints)
-        y_data_list.append(y_data)
-        
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    
-    boxplot(ax, x_data, y_data_list, colormap=None, boxwidth=1, boxlinewidth=0.5, outlier_limit=0.01, show_outliers=True)
-    adjust_spines(ax, ['left', 'bottom'])
-    
-    ax.set_xlabel('x axis')
-    ax.set_ylabel('y axis')
-    
-    fig.savefig('boxplot_classic_example.pdf', format='pdf')    
-    
-    
-    
 ###################################################################################################
 # 2D "heatmap" Histogram
 ###################################################################################################
@@ -588,27 +489,6 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
                 interpolation=interpolation,
                 norm=colornorm)
                 
-def histogram2d_example():  
-
-    # make some random data
-    mean = np.random.random()*10
-    std = 3
-    ndatapoints = 50000
-    x = gaussian_distribution.rvs(loc=mean, scale=std, size=ndatapoints)
-    y = gaussian_distribution.rvs(loc=mean, scale=std, size=ndatapoints)
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    histogram2d(ax, x, y, bins=100)
-    
-    adjust_spines(ax, ['left', 'bottom'])
-    
-    fig.savefig('histogram2d_example.pdf', format='pdf')
-
-
-
-
-
 ###################################################################################################
 # Colorbar
 ###################################################################################################
@@ -661,9 +541,6 @@ def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect=20, or
     if filename is not None:
         fig.savefig(filename, format='pdf')
     
-def colorbar_example():
-    colorbar(filename='colorbar_example.pdf')
-    
 ###################################################################################################
 # Scatter Plot (with PatchCollections of circles) : more control than plotting with 'dotted' style with "plot"
 ###################################################################################################
@@ -707,34 +584,13 @@ def scatter(ax, x, y, color='black', colormap='jet', radius=0.01, colornorm=None
     # add collection to axis    
     ax.add_collection(cc)  
     
-    
-def scatter_example():
-    
-    x = np.random.random(100)
-    y = np.random.random(100)
-    
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    
-    # show a few different scatter examples
-    scatter(ax, x, y, color=x*10) # with color scale
-    scatter(ax, x+1, y+1, color='black') # set fixed color
-    scatter(ax, x+1, y, color='blue', radius=0.05, alpha=0.2) # set some parameters for all circles 
-    scatter(ax, x, y+1, color='green', radius=x, alpha=0.6, radiusnorm=(0.2, 0.8), minradius=0.01, maxradius=0.05) # let radius vary with some array 
-    
-    ax.set_xlim(0,2)
-    ax.set_ylim(0,2)
-    ax.set_aspect('equal')
-    adjust_spines(ax, ['left', 'bottom'])
-    fig.savefig('scatter_example.pdf', format='pdf')
-    
-    
 ###################################################################################################
 # Run examples: lets you see all the example plots!
 ###################################################################################################
 def run_examples():
     adjust_spines_example_with_custom_ticks()
     colorline_example()
+    colorline_with_heading_example()
     histogram_example()
     boxplot_example()
     boxplot_classic_example()
