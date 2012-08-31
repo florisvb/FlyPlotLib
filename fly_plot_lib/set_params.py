@@ -2,9 +2,8 @@ from matplotlib import rcParams
 
 # NOTE: run this function prior to import matplotlib.pyplot!!!
 
-def set_params(default='pdf', params={}):
-    if default == 'pdf':
-        default_params = {'backend': 'Agg',
+def pdf(params={}):
+    default_params = {'backend': 'Agg',
                       'ps.usedistiller': 'xpdf',
                       'ps.fonttype' : 3,
                       'pdf.fonttype' : 3,
