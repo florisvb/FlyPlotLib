@@ -164,10 +164,11 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
 ###################################################################################################
 
 # plot a line in x and y with changing colors defined by z, and optionally changing linewidths defined by linewidth
-def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', norm=None, edgecolors='none', alpha=1, indices_to_plot=None):
+def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0):
         
-        # angles must be in degrees
+        # angles are in degrees, use deg=False to take care of orientations in radians
         # (x,y) defines tip
+        # nskip allows you to skip between points to make the points clearer, nskip=1 skips every other point
 
         cmap = plt.get_cmap(colormap)
         
@@ -176,11 +177,18 @@ def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_a
         else:
             norm = plt.Normalize(norm[0], norm[1])
             
-        if indices_to_plot is None:
-            indices_to_plot = np.arange(0, len(x))
+        indices_to_plot = np.arange(0, len(x), nskip+1)
+            
+        # fix orientations
+        if deg is False:
+            orientation = orientation*180./np.pi
+        if flip:
+            orientation += 180
         
         flycons = []
+        n = 0
         for i in indices_to_plot:
+            # wedge parameters
             center = [x[i], y[i]]
             
             if type(size_radius) is list: r = size_radius[i]
@@ -200,7 +208,7 @@ def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_a
         # set properties for collection
         pc.set_edgecolors(edgecolors)
         if type(color) is list or type(color) is np.array or type(color) is np.ndarray:
-            pc.set_array(color)
+            pc.set_array(color[indices_to_plot])
         else:
             pc.set_facecolors(color)
         pc.set_alpha(alpha)
