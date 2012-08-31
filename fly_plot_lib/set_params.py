@@ -3,6 +3,8 @@ from matplotlib import rcParams
 # NOTE: run this function prior to import matplotlib.pyplot!!!
 
 def pdf(params={}):
+    print 'Loading rcparams for saving to PDF'
+    print 'NOTE: ipython plotting may not work as expected with these parameters loaded!'
     default_params = {'backend': 'Agg',
                       'ps.usedistiller': 'xpdf',
                       'ps.fonttype' : 3,
