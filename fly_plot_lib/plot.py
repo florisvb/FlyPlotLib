@@ -163,7 +163,7 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
 # Colorline with heading
 ###################################################################################################
 
-def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, center_offset_fraction=0):
+def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', colornorm=None, size_radius_range=(0.01,.1), size_radius_norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, center_offset_fraction=0):
     '''
     Returns a Patch Collection of Wedges, with arbitrary color and orientation
     
@@ -178,6 +178,8 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
                   if none, scales to min/max of color array (2-tuple, eg. (0,1) )
     orientation - angles are in degrees, use deg=False to convert radians to degrees
     size_radius - radius of wedge, in same units as x, y. Can be list or np.array, length N, for changing sizes
+       size_radius_norm - specifies range you'd like to normalize size_radius to, if size_radius is a list/array
+                  should be tuple, eg. (0.01, .1)
     size_angle  - angular extent of wedge, degrees. Can be list or np.array, length N, for changing sizes
     edgecolors  - color for lineedges, string or np.array of length N
     alpha       - transparency (single value, between 0 and 1)
@@ -187,10 +189,15 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
     '''
     cmap = plt.get_cmap(colormap)
     
-    if norm is None:
-        norm = plt.Normalize(np.min(color), np.max(color))
+    # norms
+    if colornorm is None:
+        colornorm = plt.Normalize(np.min(color), np.max(color))
     else:
-        norm = plt.Normalize(norm[0], norm[1])
+        colornorm = plt.Normalize(colornorm[0], colornorm[1])
+    if size_radius_norm is None:
+        size_radius_norm = plt.Normalize(np.min(size_radius), np.max(size_radius), clip=True)
+    else:
+        size_radius_norm = plt.Normalize(size_radius_norm[0], size_radius_norm[1], clip=True)
         
     indices_to_plot = np.arange(0, len(x), nskip+1)
         
@@ -205,7 +212,7 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
     for i in indices_to_plot:
         # wedge parameters
         if type(size_radius) is list or type(size_radius) is np.array or type(size_radius) is np.ndarray: 
-            r = size_radius[i]
+            r = size_radius_norm(size_radius[i])*(size_radius_range[1]-size_radius_range[0]) + size_radius_range[0] 
         else: r = size_radius
         
         if type(size_angle) is list or type(size_angle) is np.array or type(size_angle) is np.ndarray: 
@@ -222,7 +229,7 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
         flycons.append(wedge)
         
     # add collection and color it
-    pc = PatchCollection(flycons, cmap=cmap, norm=norm)
+    pc = PatchCollection(flycons, cmap=cmap, norm=colornorm)
     
     # set properties for collection
     pc.set_edgecolors(edgecolors)
@@ -236,7 +243,7 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
     
     return pc
 
-def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, use_center='center', show_centers=True, center_offset_fraction=0.75, center_point_size=2):
+def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', colornorm=None, size_radius_range=(0.01,.1), size_radius_norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, use_center='center', show_centers=True, center_offset_fraction=0.75, center_point_size=2):
     '''
     Plots a trajectory with colored wedge shapes to indicate orientation. 
     See function get_wedges_for_heading_plot for details
@@ -247,7 +254,7 @@ def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_a
     center_point_size - (integer) - markersize for center, if show_centers
     '''
         
-    pc = get_wedges_for_heading_plot(x, y, color, orientation, size_radius=size_radius, size_angle=size_angle, colormap=colormap, norm=norm, edgecolors=edgecolors, alpha=alpha, flip=flip, deg=deg, nskip=nskip, center_offset_fraction=center_offset_fraction)
+    pc = get_wedges_for_heading_plot(x, y, color, orientation, size_radius=size_radius, size_angle=size_angle, colormap=colormap, colornorm=colornorm, size_radius_range=size_radius_range, size_radius_norm=size_radius_norm, edgecolors=edgecolors, alpha=alpha, flip=flip, deg=deg, nskip=nskip, center_offset_fraction=center_offset_fraction)
         
     ax.add_collection(pc)
     
