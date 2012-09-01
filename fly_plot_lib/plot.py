@@ -163,57 +163,97 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
 # Colorline with heading
 ###################################################################################################
 
-# plot a line in x and y with changing colors defined by z, and optionally changing linewidths defined by linewidth
-def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0):
+def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, center_offset_fraction=0):
+    '''
+    Returns a Patch Collection of Wedges, with arbitrary color and orientation
+    
+    Outputs:
+    Patch Collection
+    
+    Inputs:
+    x, y        - x and y positions (np.array or list, each of length N)
+    color       - values to color wedges by (np.array or list, length N), OR color string. 
+       colormap - specifies colormap to use (string, eg. 'jet')
+       norm     - specifies range you'd like to normalize to, 
+                  if none, scales to min/max of color array (2-tuple, eg. (0,1) )
+    orientation - angles are in degrees, use deg=False to convert radians to degrees
+    size_radius - radius of wedge, in same units as x, y. Can be list or np.array, length N, for changing sizes
+    size_angle  - angular extent of wedge, degrees. Can be list or np.array, length N, for changing sizes
+    edgecolors  - color for lineedges, string or np.array of length N
+    alpha       - transparency (single value, between 0 and 1)
+    flip        - flip orientations by 180 degrees, default = True
+    nskip       - allows you to skip between points to make the points clearer, nskip=1 skips every other point
+    center_offset_fraction  - (float in range (0,1) ) - 0 means (x,y) is at the tip, 1 means (x,y) is at the edge
+    '''
+    cmap = plt.get_cmap(colormap)
+    
+    if norm is None:
+        norm = plt.Normalize(np.min(color), np.max(color))
+    else:
+        norm = plt.Normalize(norm[0], norm[1])
         
-        # angles are in degrees, use deg=False to take care of orientations in radians
-        # (x,y) defines tip
-        # nskip allows you to skip between points to make the points clearer, nskip=1 skips every other point
+    indices_to_plot = np.arange(0, len(x), nskip+1)
+        
+    # fix orientations
+    if deg is False:
+        orientation = orientation*180./np.pi
+    if flip:
+        orientation += 180
+    
+    flycons = []
+    n = 0
+    for i in indices_to_plot:
+        # wedge parameters
+        if type(size_radius) is list or type(size_radius) is np.array or type(size_radius) is np.ndarray: 
+            r = size_radius[i]
+        else: r = size_radius
+        
+        if type(size_angle) is list or type(size_angle) is np.array or type(size_angle) is np.ndarray: 
+            angle_swept = size_radius[i]
+        else: angle_swept = size_radius
+        theta1 = orientation[i] - size_angle/2.
+        theta2 = orientation[i] + size_angle/2.
+        
+        center = [x[i], y[i]]
+        center[0] -= np.cos(orientation[i]*np.pi/180.)*r*center_offset_fraction
+        center[1] -= np.sin(orientation[i]*np.pi/180.)*r*center_offset_fraction
+        
+        wedge = patches.Wedge(center, r, theta1, theta2)
+        flycons.append(wedge)
+        
+    # add collection and color it
+    pc = PatchCollection(flycons, cmap=cmap, norm=norm)
+    
+    # set properties for collection
+    pc.set_edgecolors(edgecolors)
+    if type(color) is list or type(color) is np.array or type(color) is np.ndarray:
+        if type(color) is list:
+            color = np.asarray(color)
+        pc.set_array(color[indices_to_plot])
+    else:
+        pc.set_facecolors(color)
+    pc.set_alpha(alpha)
+    
+    return pc
 
-        cmap = plt.get_cmap(colormap)
+def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, use_center='center', show_centers=True, center_offset_fraction=0.75, center_point_size=2):
+    '''
+    Plots a trajectory with colored wedge shapes to indicate orientation. 
+    See function get_wedges_for_heading_plot for details
+    
+    Additional options:
+    
+    show_centers      - (bool) - show a black dot where the actual point is - shows where the center of the wedge is 
+    center_point_size - (integer) - markersize for center, if show_centers
+    '''
         
-        if norm is None:
-            norm = plt.Normalize(np.min(color), np.max(color))
-        else:
-            norm = plt.Normalize(norm[0], norm[1])
-            
+    pc = get_wedges_for_heading_plot(x, y, color, orientation, size_radius=size_radius, size_angle=size_angle, colormap=colormap, norm=norm, edgecolors=edgecolors, alpha=alpha, flip=flip, deg=deg, nskip=nskip, center_offset_fraction=center_offset_fraction)
+        
+    ax.add_collection(pc)
+    
+    if show_centers:
         indices_to_plot = np.arange(0, len(x), nskip+1)
-            
-        # fix orientations
-        if deg is False:
-            orientation = orientation*180./np.pi
-        if flip:
-            orientation += 180
-        
-        flycons = []
-        n = 0
-        for i in indices_to_plot:
-            # wedge parameters
-            center = [x[i], y[i]]
-            
-            if type(size_radius) is list: r = size_radius[i]
-            else: r = size_radius
-            
-            if type(size_radius) is list: angle_swept = size_radius[i]
-            else: angle_swept = size_radius
-            theta1 = orientation[i] - size_angle/2.
-            theta2 = orientation[i] + size_angle/2.
-            
-            wedge = patches.Wedge(center, r, theta1, theta2)
-            flycons.append(wedge)
-            
-        # add collection and color it
-        pc = PatchCollection(flycons, cmap=cmap, norm=norm)
-        
-        # set properties for collection
-        pc.set_edgecolors(edgecolors)
-        if type(color) is list or type(color) is np.array or type(color) is np.ndarray:
-            pc.set_array(color[indices_to_plot])
-        else:
-            pc.set_facecolors(color)
-        pc.set_alpha(alpha)
-        
-        ax.add_collection(pc)
+        ax.plot(x[indices_to_plot],y[indices_to_plot],'.', color='black', markersize=center_point_size)
         
 ###################################################################################################
 # Histograms
