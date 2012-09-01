@@ -84,31 +84,24 @@ def colorline_example(save=False):
 ####################################################################################
 def colorline_with_heading_example(save=False):
     
-    def tent(x):
-        """
-        A simple tent map
-        """
-        if x < 0.5:
-            return x
-        else:
-            return -1.0*x + 1
-    
     pi = np.pi
-    t = np.linspace(0, 1, 200)
-    y = np.sin(2*pi*t)
-    z = np.array([tent(x) for x in t]) 
-    orientation = np.arcsin(y)*180./np.pi
+    t = np.linspace(0, np.pi*2, 200)
+    y = np.sin(t)
+    x = np.cos(t)
+    color = x
+    orientation = t
     
     fig = plt.figure()
     ax = fig.add_subplot(111)
     
     # standard colorline
-    fpl.colorline_with_heading(ax,t,y,z,orientation)
+    fpl.colorline_with_heading(ax,x,y,color,orientation, show_centers=True, nskip=4, center_offset_fraction=0.75, deg=False)
     
     # set the axis to appropriate limits
     fpl.adjust_spines(ax, ['left', 'bottom'])
-    ax.set_xlim(0,2)
-    ax.set_ylim(0,1.5)
+    ax.set_xlim(-1.5,1.5)
+    ax.set_ylim(-1.5,1.5)
+    ax.set_aspect('equal')
     
     if save:
         fig.savefig('figures/colorline_with_orientation_example.pdf', format='pdf')
