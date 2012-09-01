@@ -105,6 +105,32 @@ def colorline_with_heading_example(save=False):
     
     if save:
         fig.savefig('figures/colorline_with_orientation_example.pdf', format='pdf')
+        
+####################################################################################
+def colorline_with_heading_and_radius_example(save=False):
+    
+    pi = np.pi
+    t = np.linspace(0, np.pi*2, 200)
+    y = np.sin(t)
+    x = np.cos(t)
+    color = x
+    orientation = t
+    size_radius = y
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    # standard colorline
+    fpl.colorline_with_heading(ax,x,y,color,orientation, size_radius=y, size_radius_range=(0.05, .15), show_centers=True, nskip=4, center_offset_fraction=0.75, deg=False)
+    
+    # set the axis to appropriate limits
+    fpl.adjust_spines(ax, ['left', 'bottom'])
+    ax.set_xlim(-1.5,1.5)
+    ax.set_ylim(-1.5,1.5)
+    ax.set_aspect('equal')
+    
+    if save:
+        fig.savefig('figures/colorline_with_orientation_and_radius_example.pdf', format='pdf')
 
 ####################################################################################
 def histogram_example(save=False):
@@ -236,6 +262,7 @@ def run_examples(save=True):
     adjust_spines_example_with_custom_ticks(save)
     colorline_example(save)
     colorline_with_heading_example(save)
+    colorline_with_heading_and_radius_example(save)
     histogram_example(save)
     boxplot_example(save)
     boxplot_classic_example(save)
