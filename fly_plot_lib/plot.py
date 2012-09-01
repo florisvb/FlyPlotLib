@@ -251,7 +251,7 @@ def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_a
     Additional options:
     
     show_centers      - (bool) - show a black dot where the actual point is - shows where the center of the wedge is 
-    center_point_size - (integer) - markersize for center, if show_centers
+    center_point_size - markersize for center, if show_centers
     '''
         
     pc = get_wedges_for_heading_plot(x, y, color, orientation, size_radius=size_radius, size_angle=size_angle, colormap=colormap, colornorm=colornorm, size_radius_range=size_radius_range, size_radius_norm=size_radius_norm, edgecolors=edgecolors, alpha=alpha, flip=flip, deg=deg, nskip=nskip, center_offset_fraction=center_offset_fraction)
