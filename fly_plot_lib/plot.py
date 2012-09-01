@@ -163,7 +163,7 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
 # Colorline with heading
 ###################################################################################################
 
-def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', colornorm=None, size_radius_range=(0.01,.1), size_radius_norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, center_offset_fraction=0):
+def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', colornorm=None, size_radius_range=(0.01,.1), size_radius_norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, center_offset_fraction=0.75):
     '''
     Returns a Patch Collection of Wedges, with arbitrary color and orientation
     
