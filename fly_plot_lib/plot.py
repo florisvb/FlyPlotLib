@@ -304,6 +304,10 @@ def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
         
     
 def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootsrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, binweights=None):
+    '''
+    ax          -- matplotlib axis
+    data_list   -- list of data collections to histogram - if just one, either give an np.array, or soemthing like [data], where data is a list itself
+    '''
     # smoothing_range: tuple or list or sequence, eg. (1,100). Use if you only want to smooth and show smoothing over a specific range
     
     if type(bar_alpha) is not list:
@@ -329,8 +333,8 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
     
     butter_b, butter_a = signal.butter(curve_butter_filter[0], curve_butter_filter[1])
     
+    data_hist_list = []
     if return_vals:
-        data_hist_list = []
         data_curve_list = []
         data_hist_std_list = []
         
@@ -401,13 +405,22 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
             if curve_line_alpha:
                 ax.plot(interped_bin_centers, interped_data_hist_filtered2, color=colors[i], alpha=curve_line_alpha)
         
+        data_hist_list.append(data_hist)
         if return_vals:
-            data_hist_list.append(data_hist)
             if bootstrap_std:
                 data_hist_std_list.append(data_hist_std)
             
             if show_smoothed:
                 data_curve_list.append([interped_bin_centers, interped_data_hist_filtered2])
+                
+    mins_of_data = [np.min(data) for data in data_list]
+    maxs_of_data = [np.max(data) for data in data_list]
+    
+    mins_of_hist = [np.min(hist) for hist in data_hist_list]
+    maxs_of_hist = [np.max(hist) for hist in data_hist_list]
+    
+    ax.set_xlim(np.min(mins_of_data), np.max(maxs_of_data)) 
+    ax.set_ylim(0, np.max(maxs_of_hist))
                 
     if return_vals and bootstrap_std is False:
         return bins, data_hist_list, data_curve_list
@@ -600,10 +613,7 @@ def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect=20, or
 # Scatter Plot (with PatchCollections of circles) : more control than plotting with 'dotted' style with "plot"
 ###################################################################################################
 
-def scatter(ax, x, y, color='black', colormap='jet', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0): 
-    # color can be array-like, or a matplotlib color 
-    # I can't figure out how to control alpha through the individual circle patches.. it seems to get overwritten by the collection. low priority!
-
+def get_circles_for_scatter(x, y, color='black', colormap='jet', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0):
     cmap = plt.get_cmap(colormap)
     if colornorm is not None:
         colornorm = plt.Normalize(colornorm[0], colornorm[1], clip=True)
@@ -635,6 +645,14 @@ def scatter(ax, x, y, color='black', colormap='jet', radius=0.01, colornorm=None
     else:
         cc.set_facecolors(color)
     cc.set_alpha(alpha)
+    
+    return cc
+
+def scatter(ax, x, y, color='black', colormap='jet', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0): 
+    # color can be array-like, or a matplotlib color 
+    # I can't figure out how to control alpha through the individual circle patches.. it seems to get overwritten by the collection. low priority!
+
+    cc = get_circles_for_scatter(ax, x, y, color=color, colormap=colormap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
 
     # add collection to axis    
     ax.add_collection(cc)  
