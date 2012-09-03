@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import fly_plot_lib.animate1d as flyanim
+import fly_plot_lib.animate as flyanim
 
 '''
 Note: to save movies, set these flags:
