@@ -1,3 +1,5 @@
+import os
+
 import fly_plot_lib.plot as fpl
 
 import matplotlib
@@ -30,15 +32,11 @@ def play_movie(x, y, color='blue', edgecolor='none', orientation=None, save=Fals
     
     '''
     
-    print len(color)
-    print len(color[0])
-    print len(color[1])
-    
     # prep plot
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
-    anim_params = {'frame': -1*(1+nskip)}
+    anim_params = {'frame': -1*(1+nskip), 'movie_finished': False}
     
     # fix format for single trajectories
     if type(x) is list:
@@ -97,6 +95,7 @@ def play_movie(x, y, color='blue', edgecolor='none', orientation=None, save=Fals
         anim_params['frame'] += 1 + nskip
         frame_end = anim_params['frame'] + ghost_tail
         if frame_end > len(x[0]):
+            anim_params['movie_finished'] = True
             frame_end = len(x[0])
         if anim_params['frame'] >= len(x[0])-1:
             anim_params['frame'] = 0
@@ -112,7 +111,6 @@ def play_movie(x, y, color='blue', edgecolor='none', orientation=None, save=Fals
                     try:
                         colors[f] = color_mappable.to_rgba(color[i][f])
                     except:
-                        print 'except'
                         colors[f] = color[i]
                     
             if frame_end > len(x[i]):
@@ -125,15 +123,23 @@ def play_movie(x, y, color='blue', edgecolor='none', orientation=None, save=Fals
             fly.set_edgecolors(edgecolors)
             fly.set_facecolors(colors)
         
-        if save:
+        if save and not anim_params['movie_finished']:
+            print 'saving frame: ', str(anim_params['frame']), ' -- if the animation you see is strange, do not worry, look at the pngs'
             frame_prefix = '_tmp'
             frame_prefix = os.path.join(save_movie_path, frame_prefix)
             strnum = str(anim_params['frame'])
-            num_frame_digits = np.ceil(len(x) / 10.) + 1
+            num_frame_digits = np.ceil( np.log10(len(x[0]))) + 1
             while len(strnum) < num_frame_digits:
                 strnum = '0' + strnum
             frame_name = frame_prefix + '_' + strnum + '_' + '.png'
             fig.savefig(frame_name, format='png')
+            
+        if save and anim_params['movie_finished']:
+            print 
+            print 'Movie finished saving! Close the plot screen now.'
+            print 'PNGs are at: ', save_movie_path
+            print 'To turn the PNGs into a movie, you can run this command from inside the directory with the tmp files: '
+            print 'mencoder \'mf://*.png\' -mf type=png:fps=30 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o animation.avi'
         
         return flies
 
