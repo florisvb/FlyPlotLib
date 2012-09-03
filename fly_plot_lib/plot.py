@@ -163,7 +163,7 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
 # Colorline with heading
 ###################################################################################################
 
-def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', colornorm=None, size_radius_range=(0.01,.1), size_radius_norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, center_offset_fraction=0.75):
+def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', colornorm=None, size_radius_range=(0.01,.1), size_radius_norm=None, edgecolor='none', alpha=1, flip=True, deg=True, nskip=0, center_offset_fraction=0.75):
     '''
     Returns a Patch Collection of Wedges, with arbitrary color and orientation
     
@@ -181,7 +181,7 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
        size_radius_norm - specifies range you'd like to normalize size_radius to, if size_radius is a list/array
                   should be tuple, eg. (0.01, .1)
     size_angle  - angular extent of wedge, degrees. Can be list or np.array, length N, for changing sizes
-    edgecolors  - color for lineedges, string or np.array of length N
+    edgecolor   - color for lineedges, string or np.array of length N
     alpha       - transparency (single value, between 0 and 1)
     flip        - flip orientations by 180 degrees, default = True
     nskip       - allows you to skip between points to make the points clearer, nskip=1 skips every other point
@@ -232,7 +232,7 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
     pc = PatchCollection(flycons, cmap=cmap, norm=colornorm)
     
     # set properties for collection
-    pc.set_edgecolors(edgecolors)
+    pc.set_edgecolors(edgecolor)
     if type(color) is list or type(color) is np.array or type(color) is np.ndarray:
         if type(color) is list:
             color = np.asarray(color)
@@ -243,7 +243,7 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
     
     return pc
 
-def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', colornorm=None, size_radius_range=(0.01,.1), size_radius_norm=None, edgecolors='none', alpha=1, flip=True, deg=True, nskip=0, use_center='center', show_centers=True, center_offset_fraction=0.75, center_point_size=2):
+def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_angle=20, colormap='jet', colornorm=None, size_radius_range=(0.01,.1), size_radius_norm=None, edgecolor='none', alpha=1, flip=True, deg=True, nskip=0, use_center='center', show_centers=True, center_offset_fraction=0.75, center_point_size=2):
     '''
     Plots a trajectory with colored wedge shapes to indicate orientation. 
     See function get_wedges_for_heading_plot for details
@@ -254,7 +254,7 @@ def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_a
     center_point_size - markersize for center, if show_centers
     '''
         
-    pc = get_wedges_for_heading_plot(x, y, color, orientation, size_radius=size_radius, size_angle=size_angle, colormap=colormap, colornorm=colornorm, size_radius_range=size_radius_range, size_radius_norm=size_radius_norm, edgecolors=edgecolors, alpha=alpha, flip=flip, deg=deg, nskip=nskip, center_offset_fraction=center_offset_fraction)
+    pc = get_wedges_for_heading_plot(x, y, color, orientation, size_radius=size_radius, size_angle=size_angle, colormap=colormap, colornorm=colornorm, size_radius_range=size_radius_range, size_radius_norm=size_radius_norm, edgecolor=edgecolor, alpha=alpha, flip=flip, deg=deg, nskip=nskip, center_offset_fraction=center_offset_fraction)
         
     ax.add_collection(pc)
     
@@ -613,7 +613,7 @@ def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect=20, or
 # Scatter Plot (with PatchCollections of circles) : more control than plotting with 'dotted' style with "plot"
 ###################################################################################################
 
-def get_circles_for_scatter(x, y, color='black', colormap='jet', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0):
+def get_circles_for_scatter(x, y, color='black', edgecolor='none', colormap='jet', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0):
     cmap = plt.get_cmap(colormap)
     if colornorm is not None:
         colornorm = plt.Normalize(colornorm[0], colornorm[1], clip=True)
@@ -639,7 +639,7 @@ def get_circles_for_scatter(x, y, color='black', colormap='jet', radius=0.01, co
     cc = PatchCollection(circles, cmap=cmap, norm=colornorm) # potentially useful option: match_original=True
     
     # set properties for collection
-    cc.set_edgecolors('none')
+    cc.set_edgecolors(edgecolor)
     if type(color) is list or type(color) is np.array or type(color) is np.ndarray:
         cc.set_array(color)
     else:
@@ -652,7 +652,7 @@ def scatter(ax, x, y, color='black', colormap='jet', radius=0.01, colornorm=None
     # color can be array-like, or a matplotlib color 
     # I can't figure out how to control alpha through the individual circle patches.. it seems to get overwritten by the collection. low priority!
 
-    cc = get_circles_for_scatter(ax, x, y, color=color, colormap=colormap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
+    cc = get_circles_for_scatter(x, y, color=color, colormap=colormap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
 
     # add collection to axis    
     ax.add_collection(cc)  
