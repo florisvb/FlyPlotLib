@@ -254,6 +254,56 @@ def scatter_example(save=False):
     
     if save:
         fig.savefig('figures/scatter_example.pdf', format='pdf')
+        
+####################################################################################
+def example_gridspec():
+    '''
+    This is a VERY rough example. Any help on how to actually make this work properly is much appreciated. This is mostly provided for my own reference.
+    '''
+    figure_padding = 0.25
+    subplot_padding = 0.08
+
+    f = plt.figure(figsize=(8,3.9))
+
+    aspect_ratio = (4+subplot_padding)/(12.+subplot_padding)
+
+    plt.suptitle("GridSpec w/ different subplotpars")
+
+    gs1 = GridSpec(2, 2, width_ratios=[width1,width2])
+    gs1.update(left=figure_padding*aspect_ratio, right=1-figure_padding*aspect_ratio, wspace=subplot_padding, hspace=subplot_padding, top=1-figure_padding+subplot_padding, bottom=figure_padding-subplot_padding)
+    ax1 = plt.subplot(gs1[0, 0])
+    ax2 = plt.subplot(gs1[1, 0])
+    ax3 = plt.subplot(gs1[0, 1])
+    ax4 = plt.subplot(gs1[1, 1])
+
+    ax1.plot(np.linspace(0,10,10), np.linspace(0,2,10))
+    ax2.plot(np.linspace(0,10,10), np.linspace(0,2,10))
+    ax3.plot(np.linspace(0,2,10), np.linspace(0,2,10))
+    ax4.plot(np.linspace(0,2,10), np.linspace(0,2,10))
+
+    ax1.set_aspect('equal')
+    ax2.set_aspect('equal')
+    ax3.set_aspect('equal')
+    ax4.set_aspect('equal')
+
+    if 1:
+        fpl.adjust_spines(ax1, ['left'], yticks=[0,1,2])
+        ax1.set_ylabel('y axis')
+        fpl.adjust_spines(ax2, ['left', 'bottom'], xticks=[0,5,10], yticks=[0,1,2])
+        ax2.set_ylabel('y axis')
+        ax2.set_xlabel('x axis')
+        fpl.adjust_spines(ax3, ['right'], yticks=[0,1,2])
+        #ax3.set_ylabel('y axis')
+        fpl.adjust_spines(ax4, ['right', 'bottom'], xticks=[0,1,2], yticks=[0,1,2])
+        ax4.set_xlabel('x axis')
+    if 0:
+        fpl.adjust_spines(ax1, 'none')
+        fpl.adjust_spines(ax2, 'none')
+        fpl.adjust_spines(ax3, 'none')
+        fpl.adjust_spines(ax4, 'none')
+
+    if save:
+        fig.savefig('figures/gridspec_example.pdf', format='pdf')
     
     
 ####################################################################################
