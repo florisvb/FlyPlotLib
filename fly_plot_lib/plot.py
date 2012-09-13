@@ -285,6 +285,9 @@ def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
 
     if n is None:  
         n = len(xdata)
+    else:
+        if n > len(xdata):
+            n = len(xdata)
     hist_list = np.zeros([n, len(bins)-1])
     
     for i in range(n):
@@ -297,13 +300,19 @@ def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
     hist_mean = np.mean(hist_list, axis=0)
     hist_std = np.std(hist_list, axis=0)
     
+    print 'bootstrapped: '
+    print
+    print hist_mean
+    print
+    print hist_std
+    
     if return_raw:
         return hist_list
     else:
         return hist_mean, hist_std
         
     
-def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootsrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, binweights=None):
+def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, binweights=None, n_bootstrap_samples=None):
     '''
     ax          -- matplotlib axis
     data_list   -- list of data collections to histogram - if just one, either give an np.array, or soemthing like [data], where data is a list itself
@@ -348,7 +357,7 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
     for i, data in enumerate(data_list):
         
         if bootstrap_std:
-            data_hist, data_hist_std = bootstrap_histogram(data, bins=bins, normed=normed)
+            data_hist, data_hist_std = bootstrap_histogram(data, bins=bins, normed=normed, n=n_bootstrap_samples)
         else:
             data_hist = np.histogram(data, bins=bins, normed=normed)[0].astype(float)
             
@@ -378,7 +387,8 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
             for j, s in enumerate(data_hist_std):
                 x = bins[j]+bar_width*i+bin_width_buff + bar_width/2.
                 #ax.plot([x,x], [data_hist[j], data_hist[j]+data_hist_std[j]], alpha=1, color='w')
-                ax.plot([x,x], [data_hist[j], data_hist[j]+data_hist_std[j]], alpha=bar_alpha, color=colors[i], linewidth=bootsrap_line_width)
+                #ax.plot(np.array([x,x]), np.array([data_hist[j], data_hist[j]+data_hist_std[j]]), alpha=bar_alpha, color=colors[i], linewidth=bootstrap_line_width)
+                ax.vlines(x, data_hist[j], data_hist[j]+data_hist_std[j], color=colors[i], linewidth=bootstrap_line_width)
                 
                 #ax.plot([x-bar_width/3., x+bar_width/3.], [data_hist[j]+data_hist_std[j],data_hist[j]+data_hist_std[j]], alpha=1, color='w')
                 #ax.plot([x-bar_width/3., x+bar_width/3.], [data_hist[j]+data_hist_std[j],data_hist[j]+data_hist_std[j]], alpha=bar_alpha, color=colors[i])
