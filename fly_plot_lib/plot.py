@@ -267,16 +267,19 @@ def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_a
 ###################################################################################################
     
 # first some helper functions
-def custom_hist_rectangles(hist, leftedges, width, facecolor='green', edgecolor='none', alpha=1):
+def custom_hist_rectangles(hist, leftedges, width, bottomedges=None, facecolor='green', edgecolor='none', alpha=1):
     linewidth = 1
     if edgecolor == 'none':
         linewidth = 0 # hack needed to remove edges in matplotlib.version 1.0+
+        
+    if bottomedges is None:
+        bottomedges = np.zeros_like(leftedges)
 
     if type(width) is not list:
         width = [width for i in range(len(hist))]
     rects = [None for i in range(len(hist))]
     for i in range(len(hist)):
-        rects[i] = patches.Rectangle( [leftedges[i], 0], width[i], hist[i], facecolor=facecolor, edgecolor=edgecolor, alpha=alpha, linewidth=linewidth)
+        rects[i] = patches.Rectangle( [leftedges[i], bottomedges[i]], width[i], hist[i], facecolor=facecolor, edgecolor=edgecolor, alpha=alpha, linewidth=linewidth)
     return rects
 
 def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
@@ -437,6 +440,67 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
     elif return_vals and bootstrap_std is True:
         return bins, data_hist_list, data_hist_std_list, data_curve_list
     
+    
+###########
+
+def histogram_stack(ax, data_list, bins=10, bin_width_ratio=0.8, colors='green', edgecolor='none', normed=True):
+    '''
+    ax          -- matplotlib axis
+    data_list   -- list of data collections to histogram - if just one, either give an np.array, or soemthing like [data], where data is a list itself
+    normed - normalizes the SUM of all the stacked histograms
+    '''
+    # smoothing_range: tuple or list or sequence, eg. (1,100). Use if you only want to smooth and show smoothing over a specific range
+    
+    n_bars = float(len(data_list))
+    if type(bins) is int:
+        mia = np.array([np.min(d) for d in data_list])
+        maa = np.array([np.max(d) for d in data_list])
+        bins = np.linspace(np.min(mia), np.max(maa), bins, endpoint=True)
+        
+    if type(colors) is not list:
+        colors = [colors]
+    if len(colors) != n_bars:
+        colors = [colors[0] for i in range(n_bars)]
+        
+    bin_centers = np.diff(bins)/2. + bins[0:-1]
+    bin_width = np.mean(np.diff(bins))
+    bin_width_buff = (1-bin_width_ratio)*bin_width/2.
+    bar_width = (bin_width-2*bin_width_buff)/n_bars
+    
+    data_hist_list = []
+        
+    all_data = []
+    for data in data_list:
+        all_data.extend(data.tolist())
+    all_data_hist = np.histogram(all_data, bins=bins, normed=False)[0].astype(float) 
+    all_data_hist_normed = np.histogram(all_data, bins=bins, normed=True)[0].astype(float) 
+    binweights_for_normalizing = all_data_hist_normed / all_data_hist
+        
+    prev_data_hist = np.zeros_like(all_data_hist)
+    for i, data in enumerate(data_list):
+        
+        data_hist = np.histogram(data, bins=bins, normed=False)[0].astype(float)
+        
+        if normed:
+            data_hist *= binweights_for_normalizing
+            
+        rects = custom_hist_rectangles(data_hist, bins[0:-1]+bin_width_buff, bottomedges=prev_data_hist, width=bar_width, facecolor=colors[i], edgecolor=edgecolor, alpha=1)
+        prev_data_hist += data_hist
+
+        for rect in rects:
+            rect.set_zorder(1)
+            ax.add_artist(rect)
+        
+        data_hist_list.append(data_hist)
+        
+    
+    ax.set_xlim(bins[0], bins[-1])
+    if normed:
+        ax.set_ylim(0, np.max(all_data_hist_normed)+.1*np.max(all_data_hist_normed))
+    else:
+        ax.set_ylim(0, np.max(all_data_hist)+.1*np.max(all_data_hist))
+        
+    return all_data_hist_normed
 ###################################################################################################
 # Boxplots
 ###################################################################################################

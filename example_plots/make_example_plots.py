@@ -4,6 +4,7 @@ fpl = fly_plot_lib.plot
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 
 from scipy.stats import norm as gaussian_distribution
 
@@ -156,6 +157,33 @@ def histogram_example(save=False):
     
     if save:
         fig.savefig('figures/histogram_example.pdf', format='pdf')
+        
+####################################################################################
+def histogram_stack_example(save=False):
+    
+    # generate a list of various y data, from three random gaussian distributions
+    y_data_list = []
+    for i in range(3):
+        mean = np.random.random()*10
+        std = 3
+        ndatapoints = 500
+        y_data = gaussian_distribution.rvs(loc=mean, scale=std, size=ndatapoints)
+        y_data_list.append(y_data)
+        
+    nbins = 40 # note: if show_smoothed=True with default butter filter, nbins needs to be > ~15 
+    bins = np.linspace(-10,30,nbins)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    all_data_hist_normed = fpl.histogram_stack(ax, y_data_list, bins=bins, bin_width_ratio=0.8, colors=['green', 'black', 'orange'], edgecolor='none', normed=True)
+    
+    fpl.adjust_spines(ax, ['left', 'bottom'])
+    
+    if save:
+        fig.savefig('figures/histogram_stack_example.pdf', format='pdf')    
+
+    return all_data_hist_normed
 
 ####################################################################################
 def boxplot_example(save=False):
@@ -256,20 +284,20 @@ def scatter_example(save=False):
         fig.savefig('figures/scatter_example.pdf', format='pdf')
         
 ####################################################################################
-def example_gridspec():
+def example_gridspec(save=False):
     '''
     This is a VERY rough example. Any help on how to actually make this work properly is much appreciated. This is mostly provided for my own reference.
     '''
     figure_padding = 0.25
     subplot_padding = 0.08
 
-    f = plt.figure(figsize=(8,3.9))
+    fig = plt.figure(figsize=(8,3.9))
 
     aspect_ratio = (4+subplot_padding)/(12.+subplot_padding)
 
     plt.suptitle("GridSpec w/ different subplotpars")
 
-    gs1 = GridSpec(2, 2, width_ratios=[width1,width2])
+    gs1 = gridspec.GridSpec(2, 2, width_ratios=[10,2])
     gs1.update(left=figure_padding*aspect_ratio, right=1-figure_padding*aspect_ratio, wspace=subplot_padding, hspace=subplot_padding, top=1-figure_padding+subplot_padding, bottom=figure_padding-subplot_padding)
     ax1 = plt.subplot(gs1[0, 0])
     ax2 = plt.subplot(gs1[1, 0])
@@ -314,11 +342,13 @@ def run_examples(save=True):
     colorline_with_heading_example(save)
     colorline_with_heading_and_radius_example(save)
     histogram_example(save)
+    histogram_stack_example(save)
     boxplot_example(save)
     boxplot_classic_example(save)
     histogram2d_example(save)
     colorbar_example(save)
     scatter_example(save)
+    example_gridspec(save)
 
 if __name__ == '__main__':
     run_examples()
