@@ -176,14 +176,13 @@ def histogram_stack_example(save=False):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     
-    all_data_hist_normed = fpl.histogram_stack(ax, y_data_list, bins=bins, bin_width_ratio=0.8, colors=['green', 'black', 'orange'], edgecolor='none', normed=True)
+    fpl.histogram_stack(ax, y_data_list, bins=bins, bin_width_ratio=0.8, colors=['green', 'black', 'orange'], edgecolor='none', normed=True)
     
     fpl.adjust_spines(ax, ['left', 'bottom'])
     
     if save:
         fig.savefig('figures/histogram_stack_example.pdf', format='pdf')    
 
-    return all_data_hist_normed
 
 ####################################################################################
 def boxplot_example(save=False):
