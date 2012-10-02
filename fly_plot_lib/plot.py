@@ -190,9 +190,9 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
     cmap = plt.get_cmap(colormap)
     
     # norms
-    if colornorm is None:
+    if colornorm is None and type(color) is not str:
         colornorm = plt.Normalize(np.min(color), np.max(color))
-    else:
+    elif type(color) is not str:
         colornorm = plt.Normalize(colornorm[0], colornorm[1])
     if size_radius_norm is None:
         size_radius_norm = plt.Normalize(np.min(size_radius), np.max(size_radius), clip=True)
@@ -202,6 +202,8 @@ def get_wedges_for_heading_plot(x, y, color, orientation, size_radius=0.1, size_
     indices_to_plot = np.arange(0, len(x), nskip+1)
         
     # fix orientations
+    if type(orientation) is list:
+        orientation = np.array(orientation)
     if deg is False:
         orientation = orientation*180./np.pi
     if flip:
@@ -465,7 +467,7 @@ def histogram_stack(ax, data_list, bins=10, bin_width_ratio=0.8, colors='green',
     bin_centers = np.diff(bins)/2. + bins[0:-1]
     bin_width = np.mean(np.diff(bins))
     bin_width_buff = (1-bin_width_ratio)*bin_width/2.
-    bar_width = (bin_width-2*bin_width_buff)/n_bars
+    bar_width = (bin_width-bin_width_buff)
     
     data_hist_list = []
         
