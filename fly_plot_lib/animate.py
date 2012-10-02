@@ -27,14 +27,19 @@ def get_nth_image_from_directory(n, directory):
     img = plt.imread(imgfilename)    
     return img    
     
-def get_image_data(images, frame, mono=True, flipimgx=True):
+def get_image_data(images, frame, mono=True, flipimgx=False, flipimgy=False):
     if type(images) is list:
         return images[frame]
     elif type(images) is str: # should be a directory
         img = get_nth_image_from_directory(frame, images)
         if mono:
             if flipimgx:
-                return img[:,:,0].T
+                if flipimgy:
+                    img[::-1,::-1,0]
+                else:
+                    return img[::-1,:,0]
+            elif flipimgy:
+                return img[:,::-1,0]
             else:
                 return img[:,:,0]
         else:
@@ -43,17 +48,18 @@ def get_image_data(images, frame, mono=True, flipimgx=True):
         return images
         
 
-def play_movie(x, y, images=None, extent=None, origin='lower', aspect='equal', color='blue', edgecolor='none', orientation=None, save=False, save_movie_path='', nskip=0, artists=[[]], xlim=None, ylim=None, colornorm=None, colormap='jet', ghost_tail=20, ax=None, wedge_radius=0.01, circle_radius=0.005, deg=False, flip=True, imagecolormap='jet', mono=True, flipimgx=True):
+def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edgecolor='none', orientation=None, save=False, save_movie_path='', nskip=0, artists=[[]], xlim=None, ylim=None, colornorm=None, colormap='jet', ghost_tail=20, ax=None, wedge_radius=0.01, circle_radius=0.005, deg=False, flip=False, imagecolormap='jet', mono=True, flipimgx=False, flipimgy=False):
     '''
-    Show an animation of N x,y trajectories with color, orientation, and a tail.
+    Show an animation of N x,y trajectories with color, orientation, and a tail. And optionally background images.
     
     x               -- list or np.array for x position of trajectory, OR, if multiple trajectories, list of lists/np.arrays
     y               -- list or np.array for y position of trajectory, OR, if multiple trajectories, list of lists/np.arrays
     images          --      - list of images to set as the background for the animation
                             - or a single static image
                             - or path to a directory with a sequence of pyplot.imread readable images (jpeg, png, etc), numbered in order
-    extent, origin, aspect    --     see matplotlib.pyplot.imshow for details 
-    flipimgx        -- flip the image in along the "x" axis, default: True. 
+    extent, aspect  --     see matplotlib.pyplot.imshow for details - note "origin" from imshow does not work as expected, use flipimgx and flipimgy instead
+    flipimgx        -- flip the image in along the "x" axis (eg. reverse image columns), default: False. 
+    flipimgy        -- flip the image in along the "y" axis (eg. reverse image rows), default: False. 
     imagecolormap   -- colormap for images, eg. 'jet' or 'gray'
         mono        -- if the image is, or should be, mono (grayscale) set this to True (default: True). Required for colormaps to work properly
     color           -- list, OR list of lists/np.arrays, OR string
@@ -140,8 +146,8 @@ def play_movie(x, y, images=None, extent=None, origin='lower', aspect='equal', c
     # add images
     if images is not None:
         frame = 0
-        imgdata = get_image_data(images, frame, mono=mono, flipimgx=flipimgx)
-        img = ax.imshow( imgdata, extent=extent, origin=origin, cmap=plt.get_cmap(imagecolormap), zorder=-10)
+        imgdata = get_image_data(images, frame, mono=mono, flipimgx=flipimgx, flipimgy=flipimgy)
+        img = ax.imshow( imgdata, extent=extent, cmap=plt.get_cmap(imagecolormap), zorder=-10)
     
     for fly in flies:
         ax.add_collection(fly)
@@ -191,7 +197,7 @@ def play_movie(x, y, images=None, extent=None, origin='lower', aspect='equal', c
             fly.set_facecolors(colors)
             
         if images is not None:
-            imgdata = get_image_data(images, frames[-1], mono=mono, flipimgx=flipimgx)
+            imgdata = get_image_data(images, frames[-1], mono=mono, flipimgx=flipimgx, flipimgy=flipimgy)
             img.set_array(imgdata)
             
         if save and not anim_params['movie_finished']:
