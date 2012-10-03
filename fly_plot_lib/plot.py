@@ -317,7 +317,7 @@ def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
         return hist_mean, hist_std
         
     
-def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, binweights=None, n_bootstrap_samples=None):
+def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, smoothing_bins_to_exclude=[], binweights=None, n_bootstrap_samples=None):
     '''
     ax          -- matplotlib axis
     data_list   -- list of data collections to histogram - if just one, either give an np.array, or soemthing like [data], where data is a list itself
@@ -407,6 +407,13 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
                 indices_in_smoothing_range = np.where( (bin_centers>smoothing_range[0])*(bin_centers<smoothing_range[-1]) )[0].tolist()
             else:
                 indices_in_smoothing_range = [bc for bc in range(len(bin_centers))]
+                
+            for b in smoothing_bins_to_exclude:
+                try:
+                    indices_in_smoothing_range.remove(b)
+                except ValueError:
+                    print 'bin center not in indices list: ', b
+                    print 'indices list: ', indices_in_smoothing_range
                 
             data_hist_filtered = signal.filtfilt(butter_b, butter_a, data_hist[indices_in_smoothing_range])
             interped_bin_centers = np.linspace(bin_centers[indices_in_smoothing_range[0]]-bin_width/2., bin_centers[indices_in_smoothing_range[-1]]+bin_width/2., 100, endpoint=True)
@@ -722,12 +729,89 @@ def get_circles_for_scatter(x, y, color='black', edgecolor='none', colormap='jet
     cc.set_alpha(alpha)
     
     return cc
+    
+def get_ellipses_for_scatter(ax, x, y, color='black', edgecolor='none', colormap='jet', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0):
+    
+    # get ellipse size to make it a circle given axes
+    x0, y0 = ax.transAxes.transform((ax.get_ylim()[0],ax.get_xlim()[0]))
+    x1, y1 = ax.transAxes.transform((ax.get_ylim()[1],ax.get_xlim()[1]))
+    dx = x1-x0
+    dy = y1-y0
+    maxd = max(dx,dy)
+    
+    cmap = plt.get_cmap(colormap)
+    if colornorm is not None:
+        colornorm = plt.Normalize(colornorm[0], colornorm[1], clip=True)
+    
+    # setup normalizing for radius scale factor (if used)
+    if type(radius) is list or type(radius) is np.array or type(radius) is np.ndarray:
+        if radiusnorm is None:
+            radiusnorm = matplotlib.colors.Normalize(np.min(radius), np.max(radius), clip=True)
+        else:
+            radiusnorm = matplotlib.colors.Normalize(radiusnorm[0], radiusnorm[1], clip=True)
 
-def scatter(ax, x, y, color='black', colormap='jet', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0): 
+    # make circles
+    points = np.array([x, y]).T
+    ellipses = [None for i in range(len(x))]
+    for i, pt in enumerate(points):    
+        if type(radius) is list or type(radius) is np.array or type(radius) is np.ndarray:
+            r = radiusnorm(radius[i])*(maxradius-minradius) + minradius
+        else:
+            r = radius
+        width = r*2*maxd/dx
+        height = r*2*maxd/dy
+        ellipses[i] = patches.Ellipse( pt, width, height)
+
+    # make a collection of those circles    
+    cc = PatchCollection(ellipses, cmap=cmap, norm=colornorm) # potentially useful option: match_original=True
+    
+    # set properties for collection
+    cc.set_edgecolors(edgecolor)
+    if type(color) is list or type(color) is np.array or type(color) is np.ndarray:
+        cc.set_array(color)
+    else:
+        cc.set_facecolors(color)
+    cc.set_alpha(alpha)
+    
+    return cc
+
+def scatter(ax, x, y, color='black', colormap='jet', edgecolor='none', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0, xlim=None, ylim=None, use_ellipses=True): 
+    '''
+    Make a colored scatter plot
+    
+    NOTE: the scatter points will only be circles if you use_ellipses=True, and if you do not change xlim/ylim or the relative size of the axes after the function has been called.
+    
+    x           -- np.array
+    y           -- np.array
+    color       -- matplotlib color (eg. string), or np.array of values
+    colormap    -- matplotlib coloramp name (eg. 'jet')
+    edgecolor   -- matplotlib color for edges (eg. string) - default is 'none', which means no edge
+    radius      -- radius of circles to plot - in units of the axes - either a float, or np.array of floats
+    colornorm   -- min and max you would like colors in the color array normalized to, eg [0,1], default is to scale to min/max of color array
+    alpha       -- transparancy, float btwn 0 and 1
+    radiusnorm  -- min/max you would like radius array to be normalized to
+    maxradius   -- max radius size you would like
+    minradius   -- min radius size you would like
+    xlim/ylim   -- x and y limits of axes, default is scaled to min/max of x and y
+    use_ellipses-- adjust scatter point so that they are circles, even if aspect is not equal. Only works if you do not change xlim/ylim or axes shape after calling this function
+    
+    '''
     # color can be array-like, or a matplotlib color 
     # I can't figure out how to control alpha through the individual circle patches.. it seems to get overwritten by the collection. low priority!
+    
+    if xlim is None:
+        xlim = [np.min(x), np.max(x)]
+    if ylim is None:
+        ylim = [np.min(y), np.max(y)]
+        
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
+    
+    if use_ellipses:
+        cc = get_ellipses_for_scatter(ax, x, y, color=color, edgecolor=edgecolor, colormap=colormap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
 
-    cc = get_circles_for_scatter(x, y, color=color, colormap=colormap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
+    else:
+        cc = get_circles_for_scatter(x, y, color=color, edgecolor=edgecolor, colormap=colormap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
 
     # add collection to axis    
     ax.add_collection(cc)  

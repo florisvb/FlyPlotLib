@@ -269,10 +269,10 @@ def scatter_example(save=False):
     ax = fig.add_subplot(111)
     
     # show a few different scatter examples
-    fpl.scatter(ax, x, y, color=x*10) # with color scale
-    fpl.scatter(ax, x+1, y+1, color='black') # set fixed color
-    fpl.scatter(ax, x+1, y, color='blue', radius=0.05, alpha=0.2) # set some parameters for all circles 
-    fpl.scatter(ax, x, y+1, color='green', radius=x, alpha=0.6, radiusnorm=(0.2, 0.8), minradius=0.01, maxradius=0.05) # let radius vary with some array 
+    fpl.scatter(ax, x, y, color=x*10, use_ellipses=False) # with color scale
+    fpl.scatter(ax, x+1, y+1, color='black', use_ellipses=False) # set fixed color
+    fpl.scatter(ax, x+1, y, color='blue', radius=0.05, alpha=0.2, use_ellipses=False) # set some parameters for all circles 
+    fpl.scatter(ax, x, y+1, color='green', radius=x, alpha=0.6, radiusnorm=(0.2, 0.8), minradius=0.01, maxradius=0.05, use_ellipses=False) # let radius vary with some array 
     
     ax.set_xlim(0,2)
     ax.set_ylim(0,2)
@@ -281,6 +281,22 @@ def scatter_example(save=False):
     
     if save:
         fig.savefig('figures/scatter_example.pdf', format='pdf')
+        
+def scatter_example_with_ellipses(save=False):
+    
+    x = np.random.random(100)
+    y = np.random.random(100)*10
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    # show a few different scatter examples
+    fpl.scatter(ax, x, y, color=x*10) # with color scale
+    
+    fpl.adjust_spines(ax, ['left', 'bottom'])
+    
+    if save:
+        fig.savefig('figures/scatter_example_with_ellipses.pdf', format='pdf')
         
 ####################################################################################
 def example_gridspec(save=False):
