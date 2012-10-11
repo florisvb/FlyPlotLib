@@ -269,7 +269,7 @@ def colorline_with_heading(ax, x, y, color, orientation, size_radius=0.1, size_a
 ###################################################################################################
     
 # first some helper functions
-def custom_hist_rectangles(hist, leftedges, width, bottomedges=None, facecolor='green', edgecolor='none', alpha=1):
+def custom_hist_rectangles(hist, leftedges, width, bottomedges=None, facecolor='green', edgecolor='none', alpha=1, alignment='vertical'):
     linewidth = 1
     if edgecolor == 'none':
         linewidth = 0 # hack needed to remove edges in matplotlib.version 1.0+
@@ -280,8 +280,14 @@ def custom_hist_rectangles(hist, leftedges, width, bottomedges=None, facecolor='
     if type(width) is not list:
         width = [width for i in range(len(hist))]
     rects = [None for i in range(len(hist))]
-    for i in range(len(hist)):
-        rects[i] = patches.Rectangle( [leftedges[i], bottomedges[i]], width[i], hist[i], facecolor=facecolor, edgecolor=edgecolor, alpha=alpha, linewidth=linewidth)
+    
+    if alignment == 'vertical':
+        for i in range(len(hist)):
+            rects[i] = patches.Rectangle( [leftedges[i], bottomedges[i]], width[i], hist[i], facecolor=facecolor, edgecolor=edgecolor, alpha=alpha, linewidth=linewidth)
+    elif alignment == 'horizontal':
+        for i in range(len(hist)):
+            rects[i] = patches.Rectangle( [bottomedges[i], leftedges[i]], hist[i], width[i], facecolor=facecolor, edgecolor=edgecolor, alpha=alpha, linewidth=linewidth)
+    
     return rects
 
 def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
@@ -317,7 +323,7 @@ def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
         return hist_mean, hist_std
         
     
-def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, smoothing_bins_to_exclude=[], binweights=None, n_bootstrap_samples=None):
+def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, smoothing_bins_to_exclude=[], binweights=None, n_bootstrap_samples=None, alignment='vertical'):
     '''
     ax          -- matplotlib axis
     data_list   -- list of data collections to histogram - if just one, either give an np.array, or soemthing like [data], where data is a list itself
@@ -387,7 +393,7 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
                     data_hist_std /= div
                     
         
-        rects = custom_hist_rectangles(data_hist, bins[0:-1]+bar_width*i+bin_width_buff, width=bar_width, facecolor=colors[i], edgecolor=edgecolor, alpha=bar_alpha[i])
+        rects = custom_hist_rectangles(data_hist, bins[0:-1]+bar_width*i+bin_width_buff, width=bar_width, facecolor=colors[i], edgecolor=edgecolor, alpha=bar_alpha[i], alignment=alignment)
         if bootstrap_std:
             for j, s in enumerate(data_hist_std):
                 x = bins[j]+bar_width*i+bin_width_buff + bar_width/2.
@@ -419,13 +425,25 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
             interped_bin_centers = np.linspace(bin_centers[indices_in_smoothing_range[0]]-bin_width/2., bin_centers[indices_in_smoothing_range[-1]]+bin_width/2., 100, endpoint=True)
             v = 100 / float(len(bin_centers))
             
-            interped_data_hist_filtered = np.interp(interped_bin_centers, bin_centers[indices_in_smoothing_range], data_hist_filtered)
-            interped_data_hist_filtered2 = signal.filtfilt(butter_b/v, butter_a/v, interped_data_hist_filtered)
-            #ax.plot(bin_centers, data_hist_filtered, color=facecolor[i])
-            if curve_fill_alpha > 0:
-                ax.fill_between(interped_bin_centers, interped_data_hist_filtered2, np.zeros_like(interped_data_hist_filtered2), color=colors[i], alpha=curve_fill_alpha, zorder=-100, edgecolor='none')
-            if curve_line_alpha:
-                ax.plot(interped_bin_centers, interped_data_hist_filtered2, color=colors[i], alpha=curve_line_alpha)
+            if alignment == 'vertical':
+                interped_data_hist_filtered = np.interp(interped_bin_centers, bin_centers[indices_in_smoothing_range], data_hist_filtered)
+                interped_data_hist_filtered2 = signal.filtfilt(butter_b/v, butter_a/v, interped_data_hist_filtered)
+                #ax.plot(bin_centers, data_hist_filtered, color=facecolor[i])
+                if curve_fill_alpha > 0:
+                    ax.fill_between(interped_bin_centers, interped_data_hist_filtered2, np.zeros_like(interped_data_hist_filtered2), color=colors[i], alpha=curve_fill_alpha, zorder=-100, edgecolor='none')
+                if curve_line_alpha:
+                    ax.plot(interped_bin_centers, interped_data_hist_filtered2, color=colors[i], alpha=curve_line_alpha)
+        
+            if alignment == 'horizontal':
+                interped_data_hist_filtered = np.interp(interped_bin_centers, bin_centers[indices_in_smoothing_range], data_hist_filtered)
+                interped_data_hist_filtered2 = signal.filtfilt(butter_b/v, butter_a/v, interped_data_hist_filtered)
+                #ax.plot(bin_centers, data_hist_filtered, color=facecolor[i])
+                if curve_fill_alpha > 0:
+                    ax.fill_betweenx(interped_bin_centers, interped_data_hist_filtered2, np.zeros_like(interped_data_hist_filtered2), color=colors[i], alpha=curve_fill_alpha, zorder=-100, edgecolor='none')
+                if curve_line_alpha:
+                    ax.plot(interped_data_hist_filtered2, interped_bin_centers, color=colors[i], alpha=curve_line_alpha)
+        
+        
         
         data_hist_list.append(data_hist)
         if return_vals:
@@ -441,8 +459,12 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
     mins_of_hist = [np.min(hist) for hist in data_hist_list]
     maxs_of_hist = [np.max(hist) for hist in data_hist_list]
     
-    ax.set_xlim(np.min(mins_of_data), np.max(maxs_of_data)) 
-    ax.set_ylim(0, np.max(maxs_of_hist))
+    if alignment == 'vertical':
+        ax.set_xlim(np.min(mins_of_data), np.max(maxs_of_data)) 
+        ax.set_ylim(0, np.max(maxs_of_hist))
+    elif alignment == 'horizontal':
+        ax.set_ylim(np.min(mins_of_data), np.max(maxs_of_data)) 
+        ax.set_xlim(0, np.max(maxs_of_hist))
                 
     if return_vals and bootstrap_std is False:
         return bins, data_hist_list, data_curve_list

@@ -159,6 +159,31 @@ def histogram_example(save=False):
         fig.savefig('figures/histogram_example.pdf', format='pdf')
         
 ####################################################################################
+def histogram_horizontal_example(save=False):
+    
+    # generate a list of various y data, from three random gaussian distributions
+    y_data_list = []
+    for i in range(3):
+        mean = np.random.random()*10
+        std = 3
+        ndatapoints = 500
+        y_data = gaussian_distribution.rvs(loc=mean, scale=std, size=ndatapoints)
+        y_data_list.append(y_data)
+        
+    nbins = 40 # note: if show_smoothed=True with default butter filter, nbins needs to be > ~15 
+    bins = np.linspace(-10,30,nbins)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    fpl.histogram(ax, y_data_list, bins=bins, bin_width_ratio=0.8, colors=['green', 'black', 'orange'], edgecolor='none', bar_alpha=1, curve_fill_alpha=0.4, curve_line_alpha=1, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=True, normed_occurences=False, bootstrap_std=False, exponential_histogram=False, alignment='horizontal')
+    
+    fpl.adjust_spines(ax, ['left', 'bottom'])
+    
+    if save:
+        fig.savefig('figures/histogram_horizontal_example.pdf', format='pdf')
+        
+####################################################################################
 def histogram_stack_example(save=False):
     
     # generate a list of various y data, from three random gaussian distributions
