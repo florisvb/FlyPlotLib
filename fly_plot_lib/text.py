@@ -8,13 +8,14 @@ def text_box_example():
     text = 'hi am a super long string... alskdjaklsjdhflkajhdsflkjas aksjdfasdl alskdfj asldkfasd lasldkfjasd oaeasdf adglkajdfga adlfj asdf asldf ajsdflksdj asdf asldkja ldsf a asdkfj alskdjf a a alskdfj alkdj awldsf asldf laej fldsf alskdfj alksdf al as as lkdj ladsaslaskdjfalskdjf  alsdk fjlaskdjf laskdj'
     
     fig = plt.figure()
-    text_box(fig, 0.5, 0.5, 0.4, 0.4, text)
+    text_box(fig, 0.1, 0.9, 0.8, 0.8, text, family='serif', fontsize=12, horizontalalignment='left')
     plt.show()
     
 def text_box(fig, left, top, width, height, text, family=None, fontsize=None, horizontalalignment='left', verticalalignment='top', rotation=0, style=None):
-    '''
+    """
     Function for creating a text box with automatic text wrapping. Thanks to Joe Kington via StackOverflow.
     The function creates a new set of axes without frames or ticks and wraps the text to fit inside the box.
+    Note: if the text does not fit in the text box, the auto-wrapping will not happen.
     
     fig                         -- the figure instance on which you would like to make a text box
     left, top, width, height    -- for the boundaries of the text box, in fractions of the fig (from 0 to 1). Can be overlaid on 
@@ -24,13 +25,15 @@ def text_box(fig, left, top, width, height, text, family=None, fontsize=None, ho
     Optional arguments - see fig.text or ax.text:
     family, fontsize, horizontalalignment, verticalalignment, rotation, style
     
+    Note: style does not appear to work robustly
     
-    '''   
+    
+    """
 
     text_box = fig.add_axes([left, top-height, width, height])
     text_box.set_xlim(0,1)
     text_box.set_ylim(0,1)
-    text_box.text(  0,1, text, 
+    text_box.text(  0,1, text,
                     verticalalignment=verticalalignment, 
                     horizontalalignment=horizontalalignment,
                     family=family,

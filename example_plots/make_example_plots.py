@@ -11,7 +11,8 @@ from scipy.stats import norm as gaussian_distribution
 
 ####################################################################################
 def text_wrapping_example(save=False):
-    text = 'hi am a super long string, with my top left corner in the middle of the figure. The text got auto-wrapped so it fits inside this cool little box that has a width and height equal to 40$\%$ of the figure size. How cool is that?'
+    text = r"I am a super long string, with my top left corner in the middle of the figure. The text got auto-wrapped so it fits inside this cool little box that has a width and height equal to 40$\%$ of the figure size. How cool is that? With tex set to True in the rcparams (a default for the pdf saving in fly plot lib) you can make \textbf{bold text} and \emph{italic} too. Note the ``r'' before the text string that tells matplotlib to use raw text, which ignores things like ``\textbackslash t''. Unfortunately there is some weird behavior with text wrapping and bold and italic stuff. Also, the characters used to tell latex to do stuff get used in the wrapping calculations. Deal with it, I guess."
+    
     
     fig = plt.figure()
     
@@ -21,6 +22,7 @@ def text_wrapping_example(save=False):
     height = 0.4
     
     fpl_text.text_box(fig, left, top, width, height, text)
+    #fig.text(0, 0.5, text)
     plt.draw()
     
     if save:
