@@ -1,12 +1,30 @@
 import fly_plot_lib
 fly_plot_lib.set_params.pdf()
 fpl = fly_plot_lib.plot
+fpl_text = fly_plot_lib.text
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 from scipy.stats import norm as gaussian_distribution
+
+####################################################################################
+def text_wrapping_example(save=False):
+    text = 'hi am a super long string, with my top left corner in the middle of the figure. The text got auto-wrapped so it fits inside this cool little box that has a width and height equal to 40$\%$ of the figure size. How cool is that?'
+    
+    fig = plt.figure()
+    
+    left = 0.5
+    top = 0.5
+    width = 0.4
+    height = 0.4
+    
+    fpl_text.text_box(fig, left, top, width, height, text)
+    plt.draw()
+    
+    if save:
+        fig.savefig('figures/text_wrapping_example.pdf', format='pdf')    
 
 ####################################################################################
 def adjust_spines_example(save=False):
@@ -376,7 +394,7 @@ def example_gridspec(save=False):
     
 ####################################################################################
 def run_examples(save=True):
-
+    text_wrapping_example(save)
     adjust_spines_example_with_custom_ticks(save)
     colorline_example(save)
     colorline_with_heading_example(save)
