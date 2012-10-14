@@ -11,7 +11,7 @@ def text_box_example():
     text_box(fig, 0.1, 0.9, 0.8, 0.8, text, family='serif', fontsize=12, horizontalalignment='left')
     plt.show()
     
-def text_box(fig, left, top, width, height, text, family=None, fontsize=None, horizontalalignment='left', verticalalignment='top', rotation=0, style=None):
+def text_box(fig, left, top, width, height, text, family=None, fontsize=None, horizontalalignment='left', verticalalignment='top', rotation=0, style=None, **kwargs):
     """
     Function for creating a text box with automatic text wrapping. Thanks to Joe Kington via StackOverflow.
     The function creates a new set of axes without frames or ticks and wraps the text to fit inside the box.
@@ -38,7 +38,8 @@ def text_box(fig, left, top, width, height, text, family=None, fontsize=None, ho
                     horizontalalignment=horizontalalignment,
                     family=family,
                     fontsize=fontsize,
-                    style=style)
+                    style=style,
+                    **kwargs)
     
     text_box.set_frame_on(False)
     text_box.set_xticks([])
