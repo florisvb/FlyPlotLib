@@ -2,6 +2,8 @@ import os
 
 import fly_plot_lib.plot as fpl
 
+import types
+
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -57,6 +59,9 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
     images          --      - list of images to set as the background for the animation
                             - or a single static image
                             - or path to a directory with a sequence of pyplot.imread readable images (jpeg, png, etc), numbered in order
+                            - or a type with a __call__ attribute (eg. a function or class method). 
+                              The function __call__ attribute should take a single input, the frame number, and return the image to be used.
+                            
     extent, aspect  --     see matplotlib.pyplot.imshow for details - note "origin" from imshow does not work as expected, use flipimgx and flipimgy instead
     flipimgx        -- flip the image in along the "x" axis (eg. reverse image columns), default: False. 
     flipimgy        -- flip the image in along the "y" axis (eg. reverse image rows), default: False. 
@@ -79,6 +84,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
     flip            -- (bool) flip orientation? True means yes. Passed to fpl.get_wedges...
     
     '''
+    plt.close('all')
     
     # prep plot
     if ax is None:
@@ -146,7 +152,22 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
     # add images
     if images is not None:
         frame = 0
-        imgdata = get_image_data(images, frame, mono=mono, flipimgx=flipimgx, flipimgy=flipimgy)
+        if hasattr(images, '__call__'):
+            imgdata = images(frame)
+            if len(imgdata.shape) > 2:
+                imgdata = imgdata[:,:,0]
+            if flipimgx:
+                if flipimgy:
+                    imgdata = imgdata[::-1,::-1]
+                else:
+                    imgdata = imgdata[::-1,:]
+            elif flipimgy:
+                imgdata = imgdata[:,::-1]
+            else:
+                imgdata = imgdata[:,:]
+         
+        else:   
+            imgdata = get_image_data(images, frame, mono=mono, flipimgx=flipimgx, flipimgy=flipimgy)
         img = ax.imshow( imgdata, extent=extent, cmap=plt.get_cmap(imagecolormap), zorder=-10)
     
     for fly in flies:
@@ -164,6 +185,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
         
     def updatefig(*args):
         anim_params['frame'] += 1 + nskip
+        print anim_params['frame'] 
         if anim_params['frame'] >= len(x[0])-1:
             anim_params['frame'] = 1
             anim_params['movie_finished'] = True
@@ -197,7 +219,22 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             fly.set_facecolors(colors)
             
         if images is not None:
-            imgdata = get_image_data(images, frames[-1], mono=mono, flipimgx=flipimgx, flipimgy=flipimgy)
+            if hasattr(images, '__call__'):
+                imgdata = images(frames[-1])
+                if len(imgdata.shape) > 2:
+                    imgdata = imgdata[:,:,0]
+                if flipimgx:
+                    if flipimgy:
+                        imgdata = imgdata[::-1,::-1]
+                    else:
+                        imgdata = imgdata[::-1,:]
+                elif flipimgy:
+                    imgdata = imgdata[:,::-1]
+                else:
+                    imgdata = imgdata[:,:]
+             
+            else:   
+                imgdata = get_image_data(images, frames[-1], mono=mono, flipimgx=flipimgx, flipimgy=flipimgy)
             img.set_array(imgdata)
             
         if save and not anim_params['movie_finished']:
