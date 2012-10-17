@@ -17,6 +17,8 @@ def text_box(fig, left, top, width, height, text, family=None, fontsize=None, ho
     The function creates a new set of axes without frames or ticks and wraps the text to fit inside the box.
     Note: if the text does not fit in the text box, the auto-wrapping will not happen.
     
+    Note: If you are savign to pdf, you must do "plt.draw()" after you're done with all your text boxes, otherwise they won't get wrapped!!
+    
     fig                         -- the figure instance on which you would like to make a text box
     left, top, width, height    -- for the boundaries of the text box, in fractions of the fig (from 0 to 1). Can be overlaid on 
                                    top of existing axes
