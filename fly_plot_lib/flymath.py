@@ -52,6 +52,12 @@ def isodd(n):
     else:
         return True
         
+###
+def in_range(v, okrange):
+    if v > np.min(okrange) and v < np.max(okrange):
+        return True
+    else:
+        return False 
         
 ###
 def interpolate_nan(Array):
