@@ -2,12 +2,44 @@ import fly_plot_lib
 fly_plot_lib.set_params.pdf()
 fpl = fly_plot_lib.plot
 fpl_text = fly_plot_lib.text
+flymath = fly_plot_lib.flymath
 
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 
 from scipy.stats import norm as gaussian_distribution
+
+
+
+
+####################################################################################
+def remove_discontinuities_example(save=False):
+    
+    t = np.arange(0, 10, 0.01)
+    y = 3*t
+    y = flymath.fix_angular_rollover(y)
+    
+    t_no_discontinuities, y_no_discontinuities = flymath.remove_discontinuities(t, y, jump=3)
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    
+    ax.plot(t, y, color='black')
+    ax.plot(t_no_discontinuities, y_no_discontinuities-.5, color='red')
+    
+    fpl.adjust_spines(ax, ['left', 'bottom'])
+    ax.set_ylabel('angle, radians')
+    ax.set_xlabel('time, sec')
+    
+    left = 0.5
+    top = 0.9
+    text = r"\noindent black - normal plot\\ red - discontinuities removed"
+    fig.text(left, top, text)
+    
+    if save:
+        fig.savefig('figures/remove_discontinuities_example.pdf', format='pdf')   
+
 
 ####################################################################################
 def text_wrapping_example(save=False):
@@ -22,7 +54,8 @@ def text_wrapping_example(save=False):
     height = 0.4
     
     fpl_text.text_box(fig, left, top, width, height, text)
-    #fig.text(0, 0.5, text)
+    
+    # Don't forget this step!!!
     plt.draw()
     
     if save:
@@ -396,6 +429,7 @@ def example_gridspec(save=False):
     
 ####################################################################################
 def run_examples(save=True):
+    remove_discontinuities_example(save)
     text_wrapping_example(save)
     adjust_spines_example_with_custom_ticks(save)
     colorline_example(save)
