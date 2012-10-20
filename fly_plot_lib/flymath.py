@@ -135,3 +135,35 @@ def dist_to_curve(pt, xdata, ydata):
     sign = np.sign(type1_y - pt[1])
     
     return sign*hdist
+    
+    
+###
+def get_continuous_chunks(array):
+    """
+    Splits array into a list of continuous chunks. Eg. [1,2,3,4,5,7,8,9] becomes [[1,2,3,4,5], [7,8,9]]
+    """
+    diffarray = diffa(array)
+    break_points = np.where(np.abs(diffarray) > 1)[0]
+    break_points = np.insert(break_points, 0, 0)
+    break_points = np.insert(break_points, len(break_points), len(array))
+    
+    chunks = []
+    for i, break_point in enumerate(break_points):
+        if break_point >= len(array):
+            break
+        chunk = array[break_point:break_points[i+1]]
+        if type(chunk) is not list:
+            chunk = chunk.tolist()
+        chunks.append(chunk)
+        
+    if type(break_points) is not list:
+        break_points = break_points.tolist()
+        
+    return chunks, break_points
+    
+    
+    
+    
+    
+    
+    
