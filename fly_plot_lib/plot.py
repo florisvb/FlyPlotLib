@@ -661,6 +661,7 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
                 origin='lower', 
                 interpolation=interpolation,
                 norm=colornorm)
+    ax.set_aspect('auto')
                 
 ###################################################################################################
 # Colorbar
