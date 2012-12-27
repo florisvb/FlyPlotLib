@@ -131,7 +131,7 @@ def get_color_transformer(norm=(0,1), colormap='jet', clip=True):
     def color_transformer(v):
         Norm = plt.Normalize(norm[0], norm[1], clip=clip)
         cmap = plt.get_cmap(colormap)
-        return cmap(v, Norm)
+        return cmap(Norm(v))
     
     return color_transformer
         
