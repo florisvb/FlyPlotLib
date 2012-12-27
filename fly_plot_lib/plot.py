@@ -647,7 +647,7 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
         colornorm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
     else:
         colornorm = matplotlib.colors.Normalize(np.min(np.min(hist)), np.max(np.max(hist)))
-        
+        print 'color norm: ', np.min(np.min(hist)), np.max(np.max(hist))
     if xextent is None:
         xextent = [x[0], x[-1]]
     if yextent is None:
@@ -662,7 +662,7 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
                 interpolation=interpolation,
                 norm=colornorm)
     ax.set_aspect('auto')
-                
+    
 ###################################################################################################
 # Colorbar
 ###################################################################################################
