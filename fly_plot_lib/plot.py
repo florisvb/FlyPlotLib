@@ -121,6 +121,21 @@ def adjust_spines(ax,spines, spine_locations={}, smart_bounds=True, xticks=None,
         line.set_markeredgewidth(1)
                 
 ###################################################################################################
+# Map to Color
+###################################################################################################                
+
+def get_color_transformer(norm=(0,1), colormap='jet', clip=True):
+    '''
+    returns a function that will return a color value (4-tuple) from the given color map based on a single input, which is scaled to the range given by norm. clip is passed to plt.Normalize, default is True.
+    '''
+    def color_transformer(v):
+        Norm = plt.Normalize(norm[0], norm[1], clip=clip)
+        cmap = plt.get_cmap(colormap)
+        return cmap(v, Norm)
+    
+    return color_transformer
+        
+###################################################################################################
 # Colorline
 ###################################################################################################
 
