@@ -536,7 +536,7 @@ def histogram_stack(ax, data_list, bins=10, bin_width_ratio=0.8, colors='green',
 # Boxplots
 ###################################################################################################
     
-def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth=2, boxwidth=1, boxlinecolor='black', classic_linecolor='gray', usebins=None, boxlinewidth=0.5, outlier_limit=0.01, norm=None, use_distribution_for_linewidth=False, show_outliers=True, show_whiskers=True):    
+def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth=2, boxwidth=1, boxlinecolor='black', classic_linecolor='gray', usebins=None, boxlinewidth=0.5, outlier_limit=0.01, norm=None, use_distribution_for_linewidth=False, min_colorlinewidth=1, show_outliers=True, show_whiskers=True, logcolorscale=False, orientation='vertical'):    
     # if colormap is None: show a line instead of the 1D histogram (ie. a normal boxplot)
     # use_distribution_for_linewidth will adjust the linewidth according to the histogram of the distribution
     # classic_linecolor: sets the color of the vertical line that shows the extent of the data, if colormap=None
@@ -571,39 +571,56 @@ def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth
     
         # plot colorline
         if colormap is not None:
-            hist, bins = np.histogram(y_data_inrange, usebins, normed=False)
+            hist, bins = np.histogram(y_data_inrange, usebins, normed=True)
             hist = hist.astype(float)
-            hist /= np.max(hist)
+            #hist /= np.max(hist)
             x_arr = np.ones_like(bins)*x
             
-            if use_distribution_for_linewidth:
-                colorlinewidth = hist*colorlinewidth
+            if logcolorscale:
+                hist = np.log(hist+1)
                 
-            colorline(ax, x_arr, bins, hist, colormap=colormap, norm=norm, linewidth=colorlinewidth) # the norm defaults make it so that at each x-coordinate the colormap/linewidth will be scaled to show the full color range. If you want to control the color range for all x-coordinate distributions so that they are the same, set the norm limits when calling boxplot(). 
-            
+            if use_distribution_for_linewidth:
+                colorlinewidth = hist*colorlinewidth + min_colorlinewidth
+                
+            if orientation == 'vertical':
+                colorline(ax, x_arr, bins, hist, colormap=colormap, norm=norm, linewidth=colorlinewidth) # the norm defaults make it so that at each x-coordinate the colormap/linewidth will be scaled to show the full color range. If you want to control the color range for all x-coordinate distributions so that they are the same, set the norm limits when calling boxplot(). 
+            elif orientation == 'horizontal':
+                colorline(ax, bins, x_arr, hist, colormap=colormap, norm=norm, linewidth=colorlinewidth)
+                
         elif show_whiskers:
-            ax.vlines(x, last_quartile, np.max(y_data_inrange), color=classic_linecolor, linestyle=('-'), linewidth=boxlinewidth/2.)
-            ax.vlines(x, np.min(y_data_inrange), first_quartile, color=classic_linecolor, linestyle=('-'), linewidth=boxlinewidth/2.)
-            ax.hlines([np.min(y_data_inrange), np.max(y_data_inrange)], x-boxwidth/4., x+boxwidth/4., color=classic_linecolor, linewidth=boxlinewidth/2.)
-            
+            if orientation == 'vertical':
+                ax.vlines(x, last_quartile, np.max(y_data_inrange), color=classic_linecolor, linestyle=('-'), linewidth=boxlinewidth/2.)
+                ax.vlines(x, np.min(y_data_inrange), first_quartile, color=classic_linecolor, linestyle=('-'), linewidth=boxlinewidth/2.)
+                ax.hlines([np.min(y_data_inrange), np.max(y_data_inrange)], x-boxwidth/4., x+boxwidth/4., color=classic_linecolor, linewidth=boxlinewidth/2.)
+            elif orientation == 'horizontal':
+                ax.hlines(x, last_quartile, np.max(y_data_inrange), color=classic_linecolor, linestyle=('-'), linewidth=boxlinewidth/2.)
+                ax.hlines(x, np.min(y_data_inrange), first_quartile, color=classic_linecolor, linestyle=('-'), linewidth=boxlinewidth/2.)
+                ax.vlines([np.min(y_data_inrange), np.max(y_data_inrange)], x-boxwidth/4., x+boxwidth/4., color=classic_linecolor, linewidth=boxlinewidth/2.)
         
         
         # plot boxplot
-        ax.hlines(median, x-boxwidth/2., x+boxwidth/2., color=boxlinecolor, linewidth=boxlinewidth)
-        ax.hlines([first_quartile, last_quartile], x-boxwidth/2., x+boxwidth/2., color=boxlinecolor, linewidth=boxlinewidth/2.)
-        ax.vlines([x-boxwidth/2., x+boxwidth/2.], first_quartile, last_quartile, color=boxlinecolor, linewidth=boxlinewidth/2.)
+        if orientation == 'vertical':
+            ax.hlines(median, x-boxwidth/2., x+boxwidth/2., color=boxlinecolor, linewidth=boxlinewidth)
+            ax.hlines([first_quartile, last_quartile], x-boxwidth/2., x+boxwidth/2., color=boxlinecolor, linewidth=boxlinewidth/2.)
+            ax.vlines([x-boxwidth/2., x+boxwidth/2.], first_quartile, last_quartile, color=boxlinecolor, linewidth=boxlinewidth/2.)
+        elif orientation == 'horizontal':
+            ax.vlines(median, x-boxwidth/2., x+boxwidth/2., color=boxlinecolor, linewidth=boxlinewidth)
+            ax.vlines([first_quartile, last_quartile], x-boxwidth/2., x+boxwidth/2., color=boxlinecolor, linewidth=boxlinewidth/2.)
+            ax.hlines([x-boxwidth/2., x+boxwidth/2.], first_quartile, last_quartile, color=boxlinecolor, linewidth=boxlinewidth/2.)
         
         # plot outliers
         if show_outliers:
             if outlier_limit > 0:
                 x_arr_outliers = x*np.ones_like(y_data_outliers)
-                ax.plot(x_arr_outliers, y_data_outliers, '.', markerfacecolor='gray', markeredgecolor='none', markersize=1)
-        
+                if orientation == 'vertical':
+                    ax.plot(x_arr_outliers, y_data_outliers, '.', markerfacecolor='gray', markeredgecolor='none', markersize=1)
+                elif orientation == 'horizontal':
+                    ax.plot(y_data_outliers, x_arr_outliers, '.', markerfacecolor='gray', markeredgecolor='none', markersize=1)
 ###################################################################################################
 # 2D "heatmap" Histogram
 ###################################################################################################
 
-def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, logcolorscale=False, colormap='jet', interpolation='nearest', colornorm=None, xextent=None, yextent=None):
+def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, logcolorscale=False, colormap='jet', interpolation='nearest', colornorm=None, xextent=None, yextent=None, norm_rows=False, norm_columns=False):
     # the following paramters get passed straight to numpy.histogram2d
     # x, y, bins, normed, histrange, weights
     
@@ -643,19 +660,40 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
     if logcolorscale:
         hist = np.log(hist+1) # the plus one solves bin=0 issues
         
-    if colornorm is not None:
-        colornorm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
-    else:
-        colornorm = matplotlib.colors.Normalize(np.min(np.min(hist)), np.max(np.max(hist)))
-        print 'color norm: ', np.min(np.min(hist)), np.max(np.max(hist))
     if xextent is None:
         xextent = [x[0], x[-1]]
     if yextent is None:
         yextent = [y[0], y[-1]]
     
+    img = hist.T
+    
+    if norm_rows:
+        for r in range(img.shape[0]):
+            mi = np.min(img[r,:])
+            img[r,:] -= mi
+            ma = np.max(img[r,:])
+            if ma != 0:
+                img[r,:] /= ma
+            print mi, ma, np.min(img[r,:]), np.max(img[r,:])
+    
+    if norm_columns:
+        for c in range(img.shape[1]):
+            mi = np.min(img[:,c])
+            ma = np.max(img[:,c])
+            img[:,c] -= mi
+            img[:,c] /= ma
+        
+    
+    if colornorm is not None:
+        colornorm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
+    else:
+        colornorm = matplotlib.colors.Normalize(np.min(np.min(img)), np.max(np.max(img)))
+        print 'color norm: ', np.min(np.min(img)), np.max(np.max(img))
+        
+    
     # make the heatmap
     cmap = plt.get_cmap(colormap)
-    ax.imshow(  hist.T, 
+    ax.imshow(  img, 
                 cmap=cmap,
                 extent=(xextent[0], xextent[1], yextent[0], yextent[1]), 
                 origin='lower', 
