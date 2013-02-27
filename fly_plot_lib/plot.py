@@ -694,10 +694,11 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
     if norm_columns:
         for c in range(img.shape[1]):
             mi = np.min(img[:,c])
-            ma = np.max(img[:,c])
             img[:,c] -= mi
-            img[:,c] /= ma
-        
+            ma = np.max(img[:,c])
+            if ma != 0:
+                img[:,c] /= ma
+            print mi, ma, np.min(img[:,c]), np.max(img[:,c])
     
     if colornorm is not None:
         colornorm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
