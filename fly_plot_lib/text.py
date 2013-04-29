@@ -133,4 +133,13 @@ def __min_dist_inside__(point, rotation, box):
         distances.append((box.y0 - y0) / sin(rotation))
     return min(distances)
 
+def set_fontsize(fig,fontsize):
+    """
+    For each text object of a figure fig, set the font size to fontsize
+    """
+    def match(artist):
+        return artist.__module__ == "matplotlib.text"
+
+    for textobj in fig.findobj(match=match):
+        textobj.set_fontsize(fontsize)
 
