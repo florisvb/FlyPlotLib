@@ -97,6 +97,33 @@ def adjust_spines_example_with_custom_ticks(save=False):
     
     if save:
         fig.savefig('figures/adjust_spines_custom_ticks_example.pdf', format='pdf')
+        
+####################################################################################
+def adjust_spines_example_with_two_y_ticks(save=False):
+
+    x = np.linspace(0,100,100)
+    y = x**2
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(x,y)
+    
+    # set limits
+    ax.set_xlim(0,100)
+    ax.set_ylim(0,20000)
+    
+    ax2 = ax.twinx()
+    
+    # set custom ticks and tick labels
+    xticks = [0, 10, 25, 50, 71, 100] # custom ticks, should be a list
+    
+    fpl.adjust_spines(ax, ['left', 'bottom', 'right'], xticks=xticks, smart_bounds=True)
+    fpl.adjust_spines(ax2, ['right', 'bottom'], xticks=xticks, smart_bounds=True)
+    
+    ax.set_xlabel('x axis, custom ticks\ncoooool!')
+    
+    if save:
+        fig.savefig('figures/adjust_spines_custom_ticks_example.pdf', format='pdf')
 
 ####################################################################################
 def colorline_example(save=False):
