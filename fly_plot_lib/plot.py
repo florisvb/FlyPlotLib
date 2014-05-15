@@ -49,6 +49,7 @@ from matplotlib.collections import PatchCollection
 # colormaps: http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
 
 
+cmap_bgy = matplotlib.colors.LinearSegmentedColormap.from_list("my_new_colormap",[(0,0,.4), (0,.7,.7) , (1,1,.3)])
 
 
 ###################################################################################################
@@ -57,7 +58,7 @@ from matplotlib.collections import PatchCollection
 
 # NOTE: smart_bounds is disabled (commented out) in this function. It only works in matplotlib v >1.
 # to fix this issue, try manually setting your tick marks (see example below) 
-def adjust_spines(ax,spines, spine_locations={}, smart_bounds=True, xticks=None, yticks=None):
+def adjust_spines(ax,spines, spine_locations={}, smart_bounds=True, xticks=None, yticks=None, linewidth=1):
     if type(spines) is not list:
         spines = [spines]
         
@@ -81,6 +82,7 @@ def adjust_spines(ax,spines, spine_locations={}, smart_bounds=True, xticks=None,
     for loc, spine in ax.spines.iteritems():
         if loc in spines:
             spine.set_position(('outward',spine_locations_dict[loc])) # outward by x points
+            spine.set_linewidth(linewidth)
             spine.set_color('black')
         else:
             spine.set_color('none') # don't draw spine
@@ -118,7 +120,7 @@ def adjust_spines(ax,spines, spine_locations={}, smart_bounds=True, xticks=None,
     
     for line in ax.get_xticklines() + ax.get_yticklines():
         #line.set_markersize(6)
-        line.set_markeredgewidth(1)
+        line.set_markeredgewidth(linewidth)
                 
 ###################################################################################################
 # Map to Color
@@ -140,8 +142,9 @@ def get_color_transformer(norm=(0,1), colormap='jet', clip=True):
 ###################################################################################################
 
 # plot a line in x and y with changing colors defined by z, and optionally changing linewidths defined by linewidth
-def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=1, linestyle='solid'):
-        cmap = plt.get_cmap(colormap)
+def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=1, linestyle='solid', cmap=None):
+        if cmap is None:
+            cmap = plt.get_cmap(colormap)
         
         if type(linewidth) is list or type(linewidth) is np.array or type(linewidth) is np.ndarray:
             linewidths = linewidth
@@ -294,14 +297,20 @@ def custom_hist_rectangles(hist, leftedges, width, bottomedges=None, facecolor='
 
     if type(width) is not list:
         width = [width for i in range(len(hist))]
+        
+    if type(facecolor) is not list:
+        facecolor = [facecolor for i in range(len(hist))]
+    if type(edgecolor) is not list:
+        edgecolor = [edgecolor for i in range(len(hist))]
+        
     rects = [None for i in range(len(hist))]
     
     if alignment == 'vertical':
         for i in range(len(hist)):
-            rects[i] = patches.Rectangle( [leftedges[i], bottomedges[i]], width[i], hist[i], facecolor=facecolor, edgecolor=edgecolor, alpha=alpha, linewidth=linewidth)
+            rects[i] = patches.Rectangle( [leftedges[i], bottomedges[i]], width[i], hist[i], facecolor=facecolor[i], edgecolor=edgecolor[i], alpha=alpha, linewidth=linewidth)
     elif alignment == 'horizontal':
         for i in range(len(hist)):
-            rects[i] = patches.Rectangle( [bottomedges[i], leftedges[i]], hist[i], width[i], facecolor=facecolor, edgecolor=edgecolor, alpha=alpha, linewidth=linewidth)
+            rects[i] = patches.Rectangle( [bottomedges[i], leftedges[i]], hist[i], width[i], facecolor=facecolor[i], edgecolor=edgecolor[i], alpha=alpha, linewidth=linewidth)
     
     return rects
 
@@ -338,7 +347,7 @@ def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
         return hist_mean, hist_std
         
     
-def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, smoothing_bins_to_exclude=[], binweights=None, n_bootstrap_samples=None, alignment='vertical'):
+def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, smoothing_bins_to_exclude=[], binweights=None, n_bootstrap_samples=None, alignment='vertical', peak_trace_alpha=0, show_peak_curve=False):
     '''
     ax          -- matplotlib axis
     data_list   -- list of data collections to histogram - if just one, either give an np.array, or soemthing like [data], where data is a list itself
@@ -422,6 +431,11 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
             rect.set_zorder(1)
             ax.add_artist(rect)
         
+        if show_peak_curve:
+            if curve_line_alpha > 0:
+                ax.plot(bins[0:-1]+bar_width*i+bin_width_buff, data_hist, color=colors[i], alpha=curve_line_alpha)
+            if curve_fill_alpha > 0:
+                ax.fill_between(bins[0:-1]+bar_width*i+bin_width_buff, data_hist, np.zeros_like(data_hist), color=colors[i], alpha=curve_fill_alpha, zorder=-100, edgecolor='none')
                 
         if show_smoothed:
             if smoothing_range is not None: # in case you only want to smooth and show smoothing over a select range.
@@ -458,7 +472,7 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
                 if curve_line_alpha:
                     ax.plot(interped_data_hist_filtered2, interped_bin_centers, color=colors[i], alpha=curve_line_alpha)
         
-        
+        ax.plot(bin_centers, data_hist, color=colors[i], alpha=peak_trace_alpha)
         
         data_hist_list.append(data_hist)
         if return_vals:
@@ -635,12 +649,15 @@ def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth
 # 2D "heatmap" Histogram
 ###################################################################################################
 
-def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, logcolorscale=False, colormap='jet', interpolation='nearest', colornorm=None, xextent=None, yextent=None, norm_rows=False, norm_columns=False):
+def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, logcolorscale=False, colormap='jet', interpolation='nearest', colornorm=None, xextent=None, yextent=None, norm_rows=False, norm_columns=False, return_img=False):
     # the following paramters get passed straight to numpy.histogram2d
     # x, y, bins, normed, histrange, weights
     
     # from numpy.histogram2d:
     '''
+    
+    weights - if weights is not None, this function will plot a histogram of the weight values normalized by an unweighted histogram.
+    
     Parameters
     ----------
     x : array_like, shape(N,)
@@ -669,9 +686,17 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
       returned histogram are equal to the sum of the weights belonging to the
       samples falling into each bin.
     '''
+    hist,x_binned,y_binned = np.histogram2d(x, y, bins, normed=normed, range=histrange)
     
-    hist,x,y = np.histogram2d(x, y, bins, normed=normed, range=histrange, weights=weights)
-    
+    if weights is not None:
+        hist_weights,x,y = np.histogram2d(x, y, bins, normed=normed, range=histrange, weights=weights)
+        indices_0 = np.where( np.array(hist)==0)
+        hist = hist_weights/hist
+        hist[indices_0] = 0
+        
+    x = x_binned
+    y = y_binned
+        
     if logcolorscale:
         hist = np.log(hist+1) # the plus one solves bin=0 issues
         
@@ -684,12 +709,23 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
     
     if norm_rows:
         for r in range(img.shape[0]):
-            mi = np.min(img[r,:])
+            try:
+                mi = np.min(img[r,:])
+            except:
+                mi = 0
             img[r,:] -= mi
-            ma = np.max(img[r,:])
+            try:
+                ma = np.max(img[r,:])
+            except:
+                ma = 0
+                totalrow = 1
             if ma != 0:
-                img[r,:] /= ma
-            print mi, ma, np.min(img[r,:]), np.max(img[r,:])
+                img[r,:] /= float(ma)
+                
+            #total = np.sum(img[r,:])
+            #if total > 0:
+            #    img[r,:] /= float(total)
+            #print mi, ma, np.min(img[r,:]), np.max(img[r,:])
     
     if norm_columns:
         for c in range(img.shape[1]):
@@ -716,6 +752,9 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
                 interpolation=interpolation,
                 norm=colornorm)
     ax.set_aspect('auto')
+    
+    if return_img:
+        return img
     
 ###################################################################################################
 # Colorbar
@@ -894,22 +933,4 @@ def scatter(ax, x, y, color='black', colormap='jet', edgecolor='none', radius=0.
     # add collection to axis    
     ax.add_collection(cc)  
     
-###################################################################################################
-# Run examples: lets you see all the example plots!
-###################################################################################################
-def run_examples():
-    adjust_spines_example_with_custom_ticks()
-    colorline_example()
-    colorline_with_heading_example()
-    histogram_example()
-    boxplot_example()
-    boxplot_classic_example()
-    histogram2d_example()
-    colorbar_example()
-    scatter_example()
-
-if __name__ == '__main__':
-    run_examples()
-
-
 
