@@ -8,7 +8,11 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+import numpyimgproc as nim
+
 import numpy as np
+
+import copy
 
 def get_image_file_list(directory):
     cmd = 'ls ' + directory
@@ -50,7 +54,7 @@ def get_image_data(images, frame, mono=True, flipimgx=False, flipimgy=False):
         return images
         
 
-def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edgecolor='none', orientation=None, save=False, save_movie_path='', nskip=0, artists=[[]], xlim=None, ylim=None, colornorm=None, colormap='jet', ghost_tail=20, ax=None, wedge_radius=0.01, circle_radius=0.005, deg=False, flip=False, imagecolormap='jet', mono=True, flipimgx=False, flipimgy=False):
+def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edgecolor='none', orientation=None, save=False, save_movie_path='', nskip=0, artists=[], xlim=None, ylim=None, colornorm=None, colormap='jet', ghost_tail=20, ax=None, wedge_radius=0.01, circle_radius=0.005, deg=False, flip=False, imagecolormap='jet', mono=True, flipimgx=False, flipimgy=False, strobe=False, sync_frames=None):
     '''
     Show an animation of N x,y trajectories with color, orientation, and a tail. And optionally background images.
     
@@ -84,13 +88,19 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
     flip            -- (bool) flip orientation? True means yes. Passed to fpl.get_wedges...
     
     '''
+    x = copy.copy(x)
+    y = copy.copy(y)
+    
+    if orientation is None:
+        orientation = [None for i in range(len(x))]
+        
     plt.close('all')
     
     # prep plot
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
-    anim_params = {'frame': -1*(1+nskip)+1, 'movie_finished': False}
+    anim_params = {'frame': -1*(1+nskip)+1, 'movie_finished': False, 'strobe': strobe, 'strobeimg': None, 'frames': []}
     
     # fix format for single trajectories
     if type(x) is list:
@@ -98,6 +108,27 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             print
             print type(x[0])
             print str(len(x)) + ' flies!'
+            
+            if sync_frames is not None:
+                largest_sync_frame = np.max(sync_frames)
+                first_frames = []
+                for i, xi in enumerate(x):
+                    padding = [0]*(largest_sync_frame - sync_frames[i])
+                    x[i] = np.hstack((padding, x[i]))
+                    y[i] = np.hstack((padding, y[i])) 
+                    first_frames.append(len(padding))
+            else:
+                first_frames = [0]*len(x)
+                
+            final_frames = []
+            longest_trajectory = 0
+            for i, xi in enumerate(x):
+                if len(xi) > longest_trajectory:
+                    longest_trajectory = len(xi)
+            for i, xi in enumerate(x):
+                final_frames.append(len(xi))
+            for xi in x:
+                print len(xi) 
         else:# type(x[0]) is float or type(x[0]) is int or type(x[0]) is long or type(x[0]):
             print
             print 'Just one fly!'
@@ -106,10 +137,15 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             color = [color]
             edgecolor = [edgecolor]
             orientation = [orientation]
+            first_frames = [0]
+            final_frames = [len(x[0])]
     else:
         print
-        print str(len(x)) + ' flies!'
-                
+        print 'Not sure what format x is!'
+    
+    anim_params.setdefault('final_frames', final_frames)
+    anim_params.setdefault('first_frames', first_frames)
+        
     if len(color) != len(x):
         only_color = color[0]
         color = [only_color for i in range(len(x))]
@@ -146,8 +182,9 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
         flies.append(fly)
     
     # add artists
-    for artist in artists[i]:
+    for artist in artists:
         ax.add_artist(artist)
+        
         
     # add images
     if images is not None:
@@ -168,6 +205,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
          
         else:   
             imgdata = get_image_data(images, frame, mono=mono, flipimgx=flipimgx, flipimgy=flipimgy)
+            
         img = ax.imshow( imgdata, extent=extent, cmap=plt.get_cmap(imagecolormap), zorder=-10)
     
     for fly in flies:
@@ -183,37 +221,32 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             animation_objects.insert(0, img)
             return animation_objects
         
+    
     def updatefig(*args):
         anim_params['frame'] += 1 + nskip
-        print anim_params['frame'] 
         if anim_params['frame'] >= len(x[0])-1:
             anim_params['frame'] = 1
             anim_params['movie_finished'] = True
-            
-        frame_start = anim_params['frame'] - ghost_tail
-        frame_end = anim_params['frame']
-
-        if frame_start < 0:
-            frame_start = 0
-        frames = np.arange(frame_start, frame_end, 1).tolist()
-        
+        anim_params['frames'].append(anim_params['frame'])
+        print anim_params['frame']
         for i, fly in enumerate(flies):
-            if frame_end > len(x[i]):
-                colors = ['none' for f in range(len(x[i]))]
-            else:
-                colors = ['none' for f in range(len(x[i]))]
-                for f in frames:
-                    try:
-                        colors[f] = color_mappable.to_rgba(color[i][f])
-                    except:
-                        colors[f] = color[i]
-                    
-            if frame_end > len(x[i]):
-                edgecolors = ['none' for f in range(len(x[i]))]
-            else:
-                edgecolors = ['none' for f in range(len(x[i]))]
-                for f in frames:
-                    edgecolors[f] = edgecolor[i]
+            frame_start = anim_params['frame'] - ghost_tail
+            frame_end = anim_params['frame']
+            if frame_start < anim_params['first_frames'][i]:
+                frame_start = anim_params['first_frames'][i]
+            if frame_end > anim_params['final_frames'][i]:
+                frame_end = anim_params['final_frames'][i]
+            if frame_end < frame_start+nskip:
+                continue
+            frames = np.arange(frame_start, frame_end, nskip+1).tolist()
+            colors = ['none' for f in range(len(x[i]))]
+            edgecolors = ['none' for f in range(len(x[i]))]
+            for f in frames:
+                try:
+                    colors[f] = color_mappable.to_rgba(color[i][f])
+                except:
+                    colors[f] = color[i]
+                edgecolors[f] = edgecolor[i]
             
             fly.set_edgecolors(edgecolors)
             fly.set_facecolors(colors)
@@ -235,7 +268,16 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
              
             else:   
                 imgdata = get_image_data(images, frames[-1], mono=mono, flipimgx=flipimgx, flipimgy=flipimgy)
-            img.set_array(imgdata)
+                
+            if anim_params['strobe']:
+                if anim_params['strobeimg'] is None:
+                    anim_params['strobeimg'] = imgdata
+                else:
+                    anim_params['strobeimg'] = nim.darken([anim_params['strobeimg'], imgdata])
+                img.set_array(anim_params['strobeimg'])
+            else:
+                img.set_array(imgdata)
+                
             
         if save and not anim_params['movie_finished']:
             print 'saving frame: ', str(anim_params['frame']), ' -- if the animation you see is strange, do not worry, look at the pngs'
