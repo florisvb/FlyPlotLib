@@ -18,6 +18,7 @@ from matplotlib.collections import LineCollection
 
 # used in histogram
 from scipy.stats import norm as gaussian_distribution
+from scipy.stats import uniform as uniform_distribution
 from scipy import signal
 
 # used in colorbar
@@ -347,12 +348,19 @@ def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
         return hist_mean, hist_std
         
     
-def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, smoothing_bins_to_exclude=[], binweights=None, n_bootstrap_samples=None, alignment='vertical', peak_trace_alpha=0, show_peak_curve=False):
+def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgecolor='none', bar_alpha=0.7, curve_fill_alpha=0.4, curve_line_alpha=0.8, curve_butter_filter=[3,0.3], return_vals=False, show_smoothed=True, normed=False, normed_occurences=False, bootstrap_std=False, bootstrap_line_width=0.5, exponential_histogram=False, smoothing_range=None, smoothing_bins_to_exclude=[], binweights=None, n_bootstrap_samples=None, alignment='vertical', peak_trace_alpha=0, show_peak_curve=False, data_from_which_to_calculate_binweights=None, data_to_which_calculated_binweights_should_apply='all', weight_distributions=None):
     '''
     ax          -- matplotlib axis
     data_list   -- list of data collections to histogram - if just one, either give an np.array, or soemthing like [data], where data is a list itself
+    data_to_which_calculated_binweights_should_apply -- list of indices corresponding to datasets which should be normalized by the binweights determined by data_from_which_to_calculate_binweights
     '''
     # smoothing_range: tuple or list or sequence, eg. (1,100). Use if you only want to smooth and show smoothing over a specific range
+    
+    if type(normed) is not list:
+        normed = [normed for i in range(len(data_list))]
+        
+    if weight_distributions is None:
+        weight_distributions = [1 for i in range(len(data_list))]
     
     if type(bar_alpha) is not list:
         bar_alpha = [bar_alpha for i in range(len(colors))]
@@ -385,25 +393,44 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
     # first get max number of occurences
     max_occur = []
     for i, data in enumerate(data_list):
-        data_hist = np.histogram(data, bins=bins, normed=normed, weights=None)[0].astype(float)
+        data_hist = np.histogram(data, bins=bins, normed=normed[i], weights=None)[0].astype(float)
         max_occur.append(np.max(data_hist))
     max_occur = np.max(np.array(max_occur))
+    
+    if data_from_which_to_calculate_binweights is not None:
+        print 'calculating bin weights'
+        binweights = np.histogram(data_from_which_to_calculate_binweights, bins=bins, normed=False)[0].astype(float)
+        binweights += np.min(binweights)*1e-10 # to make sure we don't get divide by zero errors
+        binweights = binweights**-1
+        if data_to_which_calculated_binweights_should_apply == 'all':
+            binweights = [binweights for i in range(len(data_list))]
+        else:
+            tmp = []
+            for i in range(len(data_list)):
+                if i in data_to_which_calculated_binweights_should_apply:
+                    tmp.append(binweights)
+                else:
+                    tmp.append(1)
+            binweights = tmp
+                    
         
     for i, data in enumerate(data_list):
         
         if bootstrap_std:
-            data_hist, data_hist_std = bootstrap_histogram(data, bins=bins, normed=normed, n=n_bootstrap_samples)
+            data_hist, data_hist_std = bootstrap_histogram(data, bins=bins, normed=normed[i], n=n_bootstrap_samples)
         else:
-            data_hist = np.histogram(data, bins=bins, normed=normed)[0].astype(float)
+            data_hist = np.histogram(data, bins=bins, normed=normed[i])[0].astype(float)
             
         if binweights is not None:
             data_hist *= binweights[i]
-            if normed:
+            if normed[i]:
                 data_hist /= np.sum(binweights[i])
             
         if exponential_histogram:
             data_hist = np.log(data_hist+1)
-            
+        
+        data_hist = data_hist / float(weight_distributions[i])
+        
         if normed_occurences is not False:
             if normed_occurences == 'total':
                 data_hist /= max_occur 
@@ -915,7 +942,11 @@ def scatter(ax, x, y, color='black', colormap='jet', edgecolor='none', radius=0.
     '''
     # color can be array-like, or a matplotlib color 
     # I can't figure out how to control alpha through the individual circle patches.. it seems to get overwritten by the collection. low priority!
-    
+    if type(x) is not list:
+        x = x.flatten()
+    if type(y) is not list:
+        y = y.flatten()
+        
     if xlim is None:
         xlim = [np.min(x), np.max(x)]
     if ylim is None:
@@ -933,4 +964,99 @@ def scatter(ax, x, y, color='black', colormap='jet', edgecolor='none', radius=0.
     # add collection to axis    
     ax.add_collection(cc)  
     
+
+def scattered_histogram(ax, bin_leftedges, data_list, bin_width=0.6, s=1, color='green', linewidths=None, alpha=1, draw_median=False, median_color=None, fill_quartiles=True, quartile_alpha=0.3, median_linewidth=2, draw_continuous_median=True, flip_xy=False, show_scatter=True, lower_quartile=0.25, upper_quartile=0.75, medianmarkersize=5):
+    '''
+    data_list - should be a list of lists, equal in length to bin_leftedges. Each index [i] of data_list corresponds to bin_leftedges[i], and contains a list of the data that belongs in that bin.
+    '''
+    if median_color is None:
+        median_color = color
+    
+    u = uniform_distribution(0, bin_width)
+    
+    scattered_points_x = []
+    scattered_points_y = []
+    
+    for i, data in enumerate(data_list):
+        for value in data:
+            x = bin_leftedges[i] + u.rvs()
+            y = value
+            
+            if not flip_xy:
+                scattered_points_x.append(x)
+                scattered_points_y.append(y)
+            else:
+                scattered_points_y.append(x)
+                scattered_points_x.append(y)
+    
+    if show_scatter:
+        ax.scatter(scattered_points_x, scattered_points_y, s=s, facecolor=color, edgecolor='none', linewidths=linewidths, alpha=alpha, zorder=-100)
+    
+    if draw_median:
+        bin_centers = bin_leftedges + bin_width/2.
+        
+        for i, data in enumerate(data_list):
+            if len(data) > 0:
+                data.sort()
+                median = np.median(data)
+                ax.plot([bin_centers[i]-bin_width/2., bin_centers[i]+bin_width/2.], [median, median], color=median_color, linewidth=median_linewidth)
+
+                if fill_quartiles:
+                    lower_quartile_index = int(len(data)*lower_quartile)
+                    lower_quartile = data[lower_quartile_index] 
+                    upper_quartile_index = int(len(data)*upper_quartile)
+                    upper_quartile = data[upper_quartile_index]
+                    ax.fill_between([bin_centers[i]-bin_width/2., bin_centers[i]+bin_width/2.], [lower_quartile, lower_quartile], [upper_quartile, upper_quartile], facecolor=median_color, alpha=quartile_alpha, edgecolor='none')
+    
+    
+    
+    
+    if draw_continuous_median:
+        bin_centers = bin_leftedges + bin_width/2.
+        
+        medians = []
+        lower_quartiles = []
+        upper_quartiles = []
+        
+        for i, data in enumerate(data_list):
+            if len(data) > 0:
+                data.sort()
+                medians.append(np.median(data))
+
+                lower_quartile_index = int(len(data)/4.)
+                lower_quartiles.append( data[lower_quartile_index] ) 
+                upper_quartile_index = int(len(data)*3/4.)
+                upper_quartiles.append( data[upper_quartile_index] )
+            else:
+                medians.append(np.nan)
+                lower_quartiles.append(np.nan)
+                upper_quartiles.append(np.nan)
+                
+        if not flip_xy:
+            ax.plot(bin_centers, medians, color=median_color, linewidth=median_linewidth)
+        else:
+            ax.plot(medians, bin_centers, color=median_color, linewidth=median_linewidth)
+            ax.plot(medians, bin_centers, '.', markersize=medianmarkersize, markerfacecolor=median_color, markeredgecolor=median_color)
+        
+        if fill_quartiles:
+            if not flip_xy:
+                ax.fill_between(bin_centers, lower_quartiles, upper_quartiles, facecolor=median_color, alpha=quartile_alpha, edgecolor='none')
+            else:
+                ax.fill_betweenx(bin_centers, lower_quartiles, upper_quartiles, facecolor=median_color, alpha=quartile_alpha, edgecolor='none')
+    
+    
+def plot_confidence_interval(ax, x, y, confidence_interval_95, confidence_interval_50=None, width=0.3, color='blue', linewidth=0.05, alpha95=0.3, alpha50=0.5):
+    xpts = [x-width/2., x+width/2.]
+    ax.fill_between(xpts, confidence_interval_95[0], confidence_interval_95[-1], edgecolor='none', facecolor=color, alpha=alpha95)
+    if confidence_interval_50 is not None:
+        ax.fill_between(xpts, confidence_interval_50[0], confidence_interval_50[-1], edgecolor='none', facecolor=color, alpha=alpha50)
+    ax.fill_between(xpts, y-linewidth/2., y+linewidth/2., edgecolor='none', facecolor=color, alpha=1)
+
+    
+    
+    
+    
+    
+            
+
 

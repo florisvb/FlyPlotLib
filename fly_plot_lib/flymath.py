@@ -18,7 +18,9 @@ def remove_discontinuities(x, y, jump=2):
     jump -- size of discontinuity to break
     
     """
-
+    x = x.astype(np.float)
+    y = y.astype(np.float)
+    
     pos = np.where(np.abs(np.diff(y)) >= jump)[0]+1
     x = np.insert(x, pos, np.nan)
     y = np.insert(y, pos, np.nan)

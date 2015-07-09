@@ -1,6 +1,7 @@
 import os
 
 import fly_plot_lib.plot as fpl
+import fly_plot_lib.text as flytext
 
 import types
 
@@ -54,7 +55,7 @@ def get_image_data(images, frame, mono=True, flipimgx=False, flipimgy=False):
         return images
         
 
-def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edgecolor='none', orientation=None, save=False, save_movie_path='', nskip=0, artists=[], xlim=None, ylim=None, colornorm=None, colormap='jet', ghost_tail=20, ax=None, wedge_radius=0.01, circle_radius=0.005, deg=False, flip=False, imagecolormap='jet', mono=True, flipimgx=False, flipimgy=False, strobe=False, sync_frames=None):
+def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edgecolor='none', orientation=None, save=False, save_movie_path='', nskip=0, artists=[], xlim=None, ylim=None, colornorm=None, colormap='jet', ghost_tail=20, ax=None, wedge_radius=0.01, circle_radius=0.005, deg=False, flip=False, imagecolormap='jet', mono=True, flipimgx=False, flipimgy=False, strobe=False, sync_frames=None, figsize=(5,3), dpi=72):
     '''
     Show an animation of N x,y trajectories with color, orientation, and a tail. And optionally background images.
     
@@ -90,6 +91,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
     '''
     x = copy.copy(x)
     y = copy.copy(y)
+    orientation = copy.copy(orientation)
     
     if orientation is None:
         orientation = [None for i in range(len(x))]
@@ -98,7 +100,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
     
     # prep plot
     if ax is None:
-        fig = plt.figure()
+        fig = plt.figure(figsize=figsize, dpi=dpi)
         ax = fig.add_subplot(111)
     anim_params = {'frame': -1*(1+nskip)+1, 'movie_finished': False, 'strobe': strobe, 'strobeimg': None, 'frames': []}
     
@@ -113,9 +115,12 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
                 largest_sync_frame = np.max(sync_frames)
                 first_frames = []
                 for i, xi in enumerate(x):
-                    padding = [0]*(largest_sync_frame - sync_frames[i])
+                    padding = [np.nan]*(largest_sync_frame - sync_frames[i])
                     x[i] = np.hstack((padding, x[i]))
                     y[i] = np.hstack((padding, y[i])) 
+                    color[i] = np.hstack((padding, color[i])) 
+                    if orientation[0] is not None:
+                        orientation[i] = np.hstack((padding, orientation[i])) 
                     first_frames.append(len(padding))
             else:
                 first_frames = [0]*len(x)
@@ -146,6 +151,8 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
     anim_params.setdefault('final_frames', final_frames)
     anim_params.setdefault('first_frames', first_frames)
         
+    print 'length color: ', len(color), 'n flies: ', len(x)
+        
     if len(color) != len(x):
         only_color = color[0]
         color = [only_color for i in range(len(x))]
@@ -160,7 +167,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
         if colornorm is None:
             colornorm = [np.min(color), np.max(color)]    
         norm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
-        color_mappable = matplotlib.cm.ScalarMappable(norm, plt.get_cmap('jet'))
+        color_mappable = matplotlib.cm.ScalarMappable(norm, plt.get_cmap(colormap))
     else:
         colornorm = None
         colormap= None
@@ -288,6 +295,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             while len(strnum) < num_frame_digits:
                 strnum = '0' + strnum
             frame_name = frame_prefix + '_' + strnum + '_' + '.png'
+            flytext.set_fontsize(fig, 8)
             fig.savefig(frame_name, format='png')
             
         if save and anim_params['movie_finished']:
