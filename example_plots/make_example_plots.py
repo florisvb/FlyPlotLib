@@ -1,5 +1,6 @@
 import fly_plot_lib
 fly_plot_lib.set_params.pdf()
+from matplotlib.backends.backend_pdf import PdfPages
 fpl = fly_plot_lib.plot
 fpl_text = fly_plot_lib.text
 flymath = fly_plot_lib.flymath
@@ -452,6 +453,28 @@ def example_gridspec(save=False):
 
     if save:
         fig.savefig('figures/gridspec_example.pdf', format='pdf')
+        
+def example_pdf_pages():
+    # note: must import this: from matplotlib.backends.backend_pdf import PdfPages
+    
+    book_name = 'figures/pdf_book.pdf'
+    pp = PdfPages(book_name)
+    plt.close('all')
+    
+    for i in range(10):
+        ### Plotting code
+        x = np.random.random(100)
+        y = np.random.random(100)*10
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        fpl.scatter(ax, x, y, color=x*10) # with color scale
+        fpl.adjust_spines(ax, ['left', 'bottom'])
+        pp.savefig()
+        plt.close('all')
+        #################
+    
+    pp.close()
+    
     
     
 ####################################################################################
@@ -470,6 +493,7 @@ def run_examples(save=True):
     colorbar_example(save)
     scatter_example(save)
     example_gridspec(save)
+    example_pdf_pages()
 
 if __name__ == '__main__':
     run_examples()
