@@ -5,3 +5,4 @@ import text
 import flymath
 import animate_matrix
 import animate_cv
+import colormaps

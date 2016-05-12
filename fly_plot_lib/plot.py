@@ -143,7 +143,7 @@ def get_color_transformer(norm=(0,1), colormap='jet', clip=True):
 ###################################################################################################
 
 # plot a line in x and y with changing colors defined by z, and optionally changing linewidths defined by linewidth
-def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=1, linestyle='solid', cmap=None):
+def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=1, linestyle='solid', cmap=None, hide_nan_indices=True):
         if cmap is None:
             cmap = plt.get_cmap(colormap)
         
@@ -170,6 +170,14 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
         points = np.array([x, y]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
         
+        if hide_nan_indices == True:
+            nanindices_x = np.where(np.isnan(x))[0].tolist()
+            nanindices_y = np.where(np.isnan(y))[0].tolist()
+            nanindices_x.extend(nanindices_y)
+            nanindices = np.unique(nanindices_x)
+            segments = np.delete(segments, nanindices, axis=0)
+            z = np.delete(z, nanindices, axis=0)
+            
         # Create the line collection object, setting the colormapping parameters.
         # Have to set the actual values used for colormapping separately.
         lc = LineCollection(segments, linewidths=linewidths, cmap=cmap, norm=norm, zorder=zorder, alpha=alpha, linestyles=linestyle )
@@ -672,6 +680,45 @@ def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth
                     ax.plot(x_arr_outliers, y_data_outliers, '.', markerfacecolor='gray', markeredgecolor='none', markersize=1)
                 elif orientation == 'horizontal':
                     ax.plot(y_data_outliers, x_arr_outliers, '.', markerfacecolor='gray', markeredgecolor='none', markersize=1)
+                    
+def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', flipxy=False):  
+    if not hasattr(x,'__getitem__'):
+        mean = np.median(y_data)
+        y_data.sort()
+        n = len(y_data)
+        bottom_quartile = y_data[int(.25*n)]
+        top_quartile = y_data[int(.75*n)]
+        
+        xvals = [x+np.random.random()*xwidth-xwidth/2. for yi in range(len(y_data))]
+        
+        if not flipxy:  
+            ax.hlines([mean], x-xwidth, x+xwidth, colors=[color])
+            ax.fill_between([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
+            ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor='black')
+        else:
+            ax.vlines([mean], x-xwidth, x+xwidth, colors=[color])
+            ax.fill_betweenx([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
+            ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor='black')
+            
+    else:
+        for i in range(len(x)):
+            mean = np.median(y_data[i])
+            y_data[i].sort()
+            n = len(y_data[i])
+            bottom_quartile = y_data[i][int(.25*n)]
+            top_quartile = y_data[i][int(.75*n)]
+            
+            xvals = [x[i]+np.random.random()*xwidth-xwidth/2. for yi in range(len(y_data))]
+            
+            if not flipxy:
+                ax.hlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color])
+                ax.fill_between([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
+                ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor='black')
+            else:
+                ax.vlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color])
+                ax.fill_betweenx([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
+                ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor='black')
+                
 ###################################################################################################
 # 2D "heatmap" Histogram
 ###################################################################################################
@@ -1045,13 +1092,13 @@ def scattered_histogram(ax, bin_leftedges, data_list, bin_width=0.6, s=1, color=
                 ax.fill_betweenx(bin_centers, lower_quartiles, upper_quartiles, facecolor=median_color, alpha=quartile_alpha, edgecolor='none')
     
     
-def plot_confidence_interval(ax, x, y, confidence_interval_95, confidence_interval_50=None, width=0.3, color='blue', linewidth=0.05, alpha95=0.3, alpha50=0.5):
+def plot_confidence_interval(ax, x, y, confidence_interval_95, confidence_interval_50=None, width=0.3, color='blue', linewidth=3, alpha95=0.3, alpha50=0.5):
     xpts = [x-width/2., x+width/2.]
     ax.fill_between(xpts, confidence_interval_95[0], confidence_interval_95[-1], edgecolor='none', facecolor=color, alpha=alpha95)
     if confidence_interval_50 is not None:
         ax.fill_between(xpts, confidence_interval_50[0], confidence_interval_50[-1], edgecolor='none', facecolor=color, alpha=alpha50)
-    ax.fill_between(xpts, y-linewidth/2., y+linewidth/2., edgecolor='none', facecolor=color, alpha=1)
-
+    #ax.fill_between(xpts, y-linewidth/2., y+linewidth/2., edgecolor='none', facecolor=color, alpha=1)
+    ax.hlines([y], [x-width/2.], [x+width/2.], color=color, alpha=1, linewidth=linewidth)
     
     
     
