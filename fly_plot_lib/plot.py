@@ -6,7 +6,6 @@ import matplotlib
 print matplotlib.__version__
 print 'recommended version: 1.1.1 or greater'
 
-
 ###################################################################################################
 
 import numpy as np
@@ -27,7 +26,7 @@ import matplotlib.colorbar
 # used in scatter
 from matplotlib.collections import PatchCollection
 
-
+import sympy 
 
 # not used
 #import scipy.optimize
@@ -681,43 +680,125 @@ def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth
                 elif orientation == 'horizontal':
                     ax.plot(y_data_outliers, x_arr_outliers, '.', markerfacecolor='gray', markeredgecolor='none', markersize=1)
                     
-def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', flipxy=False):  
+def scatter_line(ax, x, lines, color=(0.001,0.001,0.001), shading='95conf', show_lines=False, use='median', show_mean=False):
+    if type(lines) is  list:
+        lines = np.array(lines)
+    import flystat.resampling
+    line_lo, line_hi = flystat.resampling.bootstrap_confidence_for_lines(lines, use='mean', iterations=1000)
+    line_mean = np.mean(lines, axis=0)
+    if show_mean:
+        ax.plot(x, line_mean, color=color)
+    ax.fill_between(x, line_lo, line_hi, facecolor=color, edgecolor='none', alpha=0.3)
+                    
+    if show_lines:
+        for line in lines:
+            ax.plot(x, line, color=color, linewidth=0.5)
+              
+              
+def get_optimized_scatter_distance(y_data, xwidth, y_scale_factor=1, seed=0, resolution=20):
+    
+    xvals = [seed]
+    r = np.linspace(-1*xwidth/2.,xwidth/2.,resolution) 
+    
+    for y in y_data[1:]:
+        q = sympy.symbols('q')
+        pt = [q, y*y_scale_factor]
+        
+        all_points = np.vstack((xvals,y_data[0:len(xvals)]*y_scale_factor)).T
+        diff = sympy.Matrix( all_points - np.array(pt) )
+        
+        distances = [sympy.sqrt(diff[i,:].norm(2)) for i in range(diff.shape[0])]
+        
+        dist = np.sum( distances )
+        #d_dist = sympy.diff(dist)
+        v = [dist.subs({'q': ri}) for ri in r]
+        xvals.append( r[np.argmax(v[1:-1])] )
+    
+    
+    return np.array(xvals)
+        
+    
+def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor='black', flipxy=False, shading='95conf', markersize=5, linewidth=1, use='median', optimize_scatter_distance=False, optimize_scatter_distance_resolution=20):
+    '''
+    shading - can show quartiles, or 95% conf, or none
+    optimize_scatter_distance - maximize distance between points, instead of randomizing. May take a long time.
+    '''  
     if not hasattr(x,'__getitem__'):
-        mean = np.median(y_data)
+        if use=='median':
+            mean = np.median(y_data)
+        elif use=='mean':
+            mean = np.mean(y_data)
         y_data.sort()
         n = len(y_data)
         bottom_quartile = y_data[int(.25*n)]
         top_quartile = y_data[int(.75*n)]
         
-        xvals = [x+np.random.random()*xwidth-xwidth/2. for yi in range(len(y_data))]
+        if not optimize_scatter_distance:
+            xvals = [x+np.random.random()*xwidth-xwidth/2. for yi in range(len(y_data))]
+        else:
+            xvals = get_optimized_scatter_distance(y_data, xwidth, resolution=optimize_scatter_distance_resolution)
+            xvals += x
+            
+        if shading == '95conf':
+            import flystat.resampling
+            conf_interval = flystat.resampling.bootstrap_confidence_intervals_from_data(y_data, use=use)
+            
         
         if not flipxy:  
-            ax.hlines([mean], x-xwidth, x+xwidth, colors=[color])
-            ax.fill_between([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
-            ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor='black')
+            if shading != 'none':
+                ax.hlines([mean], x-xwidth, x+xwidth, colors=[color], linewidth=linewidth)
+            if shading == 'quartiles':
+                ax.fill_between([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
+            elif shading == '95conf':
+                ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=0.3)
+            ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
         else:
-            ax.vlines([mean], x-xwidth, x+xwidth, colors=[color])
-            ax.fill_betweenx([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
-            ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor='black')
+            if shading != 'none':
+                ax.vlines([mean], x-xwidth, x+xwidth, colors=[color], linewidth=linewidth)
+            if shading == 'quartiles':
+                ax.fill_betweenx([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
+            elif shading == '95conf':
+                ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=0.3)
+            ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
             
     else:
         for i in range(len(x)):
-            mean = np.median(y_data[i])
+            if use=='median':
+                mean = np.median(y_data[i])
+            elif use=='mean':
+                mean = np.mean(y_data[i])
             y_data[i].sort()
             n = len(y_data[i])
             bottom_quartile = y_data[i][int(.25*n)]
             top_quartile = y_data[i][int(.75*n)]
             
-            xvals = [x[i]+np.random.random()*xwidth-xwidth/2. for yi in range(len(y_data))]
+            if not optimize_scatter_distance:
+                xvals = [x[i]+np.random.random()*xwidth-xwidth/2. for yi in range(len(y_data))]
+            else:
+                xvals = get_optimized_scatter_distance(y_data, xwidth, resolution=optimize_scatter_distance_resolution)
+                xvals += x[i]
+                
+
+            if shading == '95conf':
+                import flystat.resampling
+                conf_interval = flystat.resampling.bootstrap_confidence_intervals_from_data(y_data[i], use=use)
             
             if not flipxy:
-                ax.hlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color])
-                ax.fill_between([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
-                ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor='black')
+                if shading != 'none':
+                    ax.hlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color], linewidth=linewidth)
+                if shading == 'quartiles':
+                    ax.fill_between([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
+                elif shading == '95conf':
+                    ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=0.3)
+                ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
             else:
-                ax.vlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color])
-                ax.fill_betweenx([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
-                ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor='black')
+                if shading != 'none':
+                    ax.vlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color], linewidth=linewidth)
+                if shading == 'quartiles':
+                    ax.fill_betweenx([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
+                elif shading == '95conf':
+                    ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=0.3)
+                ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
                 
 ###################################################################################################
 # 2D "heatmap" Histogram
