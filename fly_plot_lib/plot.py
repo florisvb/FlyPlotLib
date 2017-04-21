@@ -27,6 +27,7 @@ import matplotlib.colorbar
 from matplotlib.collections import PatchCollection
 
 import sympy 
+import copy
 
 # not used
 #import scipy.optimize
@@ -142,7 +143,11 @@ def get_color_transformer(norm=(0,1), colormap='jet', clip=True):
 ###################################################################################################
 
 # plot a line in x and y with changing colors defined by z, and optionally changing linewidths defined by linewidth
-def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=1, linestyle='solid', cmap=None, hide_nan_indices=True):
+def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=1, linestyle='solid', cmap=None, hide_nan_indices=True, hack_round_caps=False, axis_size_inches=None, cap_size_radius_adjustment=2):
+        '''
+        hack_round_caps - extend line segments so that line appears continuous. beta mode.
+        axis_size_inches - used for hack_projected_cap (x,y). Not well implemented.
+        '''
         if cmap is None:
             cmap = plt.get_cmap(colormap)
         
@@ -161,14 +166,15 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
             if self.cb is None:
                 self.cb = matplotlib.colorbar.ColorbarBase(self.ax1, cmap=cmap, norm=norm, orientation='vertical', boundaries=None)
         '''
-            
+        
         # Create a set of line segments so that we can color them individually
         # This creates the points as a N x 1 x 2 array so that we can stack points
         # together easily to get the segments. The segments array for line collection
         # needs to be numlines x points per line x 2 (x and y)
-        points = np.array([x, y]).T.reshape(-1, 1, 2)
+        points = np.array([x, y]).T.reshape(-1, 1, 2).astype(float)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        
+
+        print segments
         if hide_nan_indices == True:
             nanindices_x = np.where(np.isnan(x))[0].tolist()
             nanindices_y = np.where(np.isnan(y))[0].tolist()
@@ -179,11 +185,20 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
             
         # Create the line collection object, setting the colormapping parameters.
         # Have to set the actual values used for colormapping separately.
-        lc = LineCollection(segments, linewidths=linewidths, cmap=cmap, norm=norm, zorder=zorder, alpha=alpha, linestyles=linestyle )
-        lc.set_array(z)
-        lc.set_linewidth(linewidth)
-        
+        ordered_zorder = (zorder-1) #+ z/float(len(z))
+        if hasattr(linewidth, '__iter__'):
+            lc = LineCollection(segments, linewidths=linewidths, cmap=cmap, norm=norm, zorder=zorder, alpha=alpha, linestyles=linestyle )
+            lc.set_array(z)
+            lc.set_zorder( ordered_zorder)#.tolist()
+            lc.set_linewidth(linewidth)
+        else:
+            lc = LineCollection(segments, linewidths=linewidth, cmap=cmap, norm=norm, zorder=zorder, alpha=alpha, linestyles=linestyle )
+            lc.set_array(z)
+            lc.set_zorder(ordered_zorder)#.tolist()
         ax.add_collection(lc)
+        
+        if hack_round_caps:
+            ax.scatter(x,y,color=cmap(norm(z)),s=linewidth**2,edgecolor='none',zorder=(z-10).tolist())
 
 ###################################################################################################
 # Colorline with heading
@@ -696,34 +711,45 @@ def scatter_line(ax, x, lines, color=(0.001,0.001,0.001), shading='95conf', show
               
               
 def get_optimized_scatter_distance(y_data, xwidth, y_scale_factor=1, seed=0, resolution=20):
-    
+    '''
+    y_scale_factory - helps spread data about more
+    '''
     xvals = [seed]
     r = np.linspace(-1*xwidth/2.,xwidth/2.,resolution) 
     
-    for y in y_data[1:]:
+    y_data_copy = copy.copy(y_data)
+    
+    y_data_copy -= np.mean(y_data_copy)
+    yrange = np.max(y_data_copy) - np.min(y_data_copy)
+    factor = yrange / float(xwidth)
+    y_data_copy /= factor
+    y_data_copy *= y_scale_factor
+    y_data_copy += 1
+    
+    for y in y_data_copy[1:]:
         q = sympy.symbols('q')
         pt = [q, y*y_scale_factor]
         
-        all_points = np.vstack((xvals,y_data[0:len(xvals)]*y_scale_factor)).T
+        all_points = np.vstack((xvals,y_data_copy[0:len(xvals)]*y_scale_factor)).T
         diff = sympy.Matrix( all_points - np.array(pt) )
         
-        distances = [sympy.sqrt(diff[i,:].norm(2)) for i in range(diff.shape[0])]
+        distances = [(diff[i,:].norm(2))**0.25 for i in range(diff.shape[0])]
         
         dist = np.sum( distances )
         #d_dist = sympy.diff(dist)
         v = [dist.subs({'q': ri}) for ri in r]
-        xvals.append( r[np.argmax(v[1:-1])] )
-    
+        rn = 0# 2*(np.random.random()-0.5)*xwidth*0.1
+        xvals.append( r[np.argmax(v)] + rn )
     
     return np.array(xvals)
         
     
-def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor='black', flipxy=False, shading='95conf', markersize=5, linewidth=1, use='median', optimize_scatter_distance=False, optimize_scatter_distance_resolution=20):
+def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor='none', flipxy=False, shading='95conf', markersize=5, linewidth=1, marker_linewidth=0, use='median', optimize_scatter_distance=False, optimize_scatter_distance_resolution=20, optimize_scatter_distance_y_scale=1, hide_markers=False, scatter_color=None, scatter_cmap='jet', scatter_norm_minmax=[0,1], random_scatter=True):
     '''
     shading - can show quartiles, or 95% conf, or none
     optimize_scatter_distance - maximize distance between points, instead of randomizing. May take a long time.
     '''  
-    if not hasattr(x,'__getitem__'):
+    if not hasattr(x,'__len__'):
         if use=='median':
             mean = np.median(y_data)
         elif use=='mean':
@@ -733,12 +759,15 @@ def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor=
         bottom_quartile = y_data[int(.25*n)]
         top_quartile = y_data[int(.75*n)]
         
-        if not optimize_scatter_distance:
-            xvals = [x+np.random.random()*xwidth-xwidth/2. for yi in range(len(y_data))]
+        if random_scatter:
+            if not optimize_scatter_distance:
+                xvals = [x+np.random.random()*xwidth*2-xwidth for yi in range(len(y_data))]
+            else:
+                xvals = get_optimized_scatter_distance(y_data, xwidth, resolution=optimize_scatter_distance_resolution, y_scale_factor=optimize_scatter_distance_y_scale)
+                xvals += x
         else:
-            xvals = get_optimized_scatter_distance(y_data, xwidth, resolution=optimize_scatter_distance_resolution)
-            xvals += x
-            
+            xvals = [x+0 for yi in range(len(y_data))]
+
         if shading == '95conf':
             import flystat.resampling
             conf_interval = flystat.resampling.bootstrap_confidence_intervals_from_data(y_data, use=use)
@@ -751,7 +780,11 @@ def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor=
                 ax.fill_between([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
             elif shading == '95conf':
                 ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=0.3)
-            ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
+            if not hide_markers:
+                if scatter_color is not None: # len is a check to rgb tuples
+                    ax.scatter(xvals, y_data, s=markersize, c=scatter_color, marker='o', cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1])
+                else:
+                    ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
         else:
             if shading != 'none':
                 ax.vlines([mean], x-xwidth, x+xwidth, colors=[color], linewidth=linewidth)
@@ -759,7 +792,11 @@ def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor=
                 ax.fill_betweenx([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
             elif shading == '95conf':
                 ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=0.3)
-            ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
+            if not hide_markers:
+                if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
+                    ax.scatter(y_data, xvals, s=markersize, c=scatter_color, marker='o', cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1])
+                else:
+                    ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
             
     else:
         for i in range(len(x)):
@@ -773,9 +810,9 @@ def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor=
             top_quartile = y_data[i][int(.75*n)]
             
             if not optimize_scatter_distance:
-                xvals = [x[i]+np.random.random()*xwidth-xwidth/2. for yi in range(len(y_data))]
+                xvals = [x[i]+np.random.random()*xwidth*2-xwidth for yi in range(len(y_data))]
             else:
-                xvals = get_optimized_scatter_distance(y_data, xwidth, resolution=optimize_scatter_distance_resolution)
+                xvals = get_optimized_scatter_distance(y_data, xwidth, resolution=optimize_scatter_distance_resolution, y_scale_factor=optimize_scatter_distance_y_scale)
                 xvals += x[i]
                 
 
@@ -790,7 +827,11 @@ def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor=
                     ax.fill_between([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
                 elif shading == '95conf':
                     ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=0.3)
-                ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
+                if not hide_markers:
+                    if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
+                        ax.scatter(xvals, y_data, s=markersize, c=scatter_color, marker='o', cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1])
+                    else:
+                        ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
             else:
                 if shading != 'none':
                     ax.vlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color], linewidth=linewidth)
@@ -798,7 +839,11 @@ def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor=
                     ax.fill_betweenx([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=0.3)
                 elif shading == '95conf':
                     ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=0.3)
-                ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
+                if not hide_markers:
+                    if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
+                        ax.scatter(y_data, xvals, s=markersize, c=scatter_color, marker='o', cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1])
+                    else:
+                        ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize)
                 
 ###################################################################################################
 # 2D "heatmap" Histogram
@@ -915,43 +960,56 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
 # Colorbar
 ###################################################################################################
 
-def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect=20, orientation='vertical', filename=None, flipspine=False):
+def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect='auto', orientation='vertical', filename=None, flipspine=False, show_spine=False):
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111)
     if ticks is None:
         ticks = np.linspace(-1,1,5,endpoint=True)
     
-    ax.set_aspect('equal')
+    if aspect is not 'auto':
+        ax.set_aspect('equal')
+    else:
+        ax.set_aspect('auto')
     
     # horizontal
     if orientation == 'horizontal':
         xlim = (ticks[0],ticks[-1])
-        yrange = (ticks[-1]-ticks[0])/float(aspect)
+        if aspect is not 'auto':
+            yrange = (ticks[-1]-ticks[0])/float(aspect)
+        else:
+            yrange = 1
         ylim = (0, yrange)
         grad = np.linspace(ticks[0], ticks[-1], 500, endpoint=True)
         im = np.vstack((grad,grad))
-        if not flipspine:
-            adjust_spines(ax,['bottom'], xticks=ticks)
-        else:
-            adjust_spines(ax,['top'], xticks=ticks)
+        if show_spine:
+            if not flipspine:
+                adjust_spines(ax,['bottom'], xticks=ticks)
+            else:
+                adjust_spines(ax,['top'], xticks=ticks)
         if ticklabels is not None:
             ax.set_xticklabels(ticklabels)
     
     # vertical
     if orientation == 'vertical':
         ylim = (ticks[0],ticks[-1])
-        xrange = (ticks[-1]-ticks[0])/float(aspect)
+        if aspect is not 'auto':
+            xrange = (ticks[-1]-ticks[0])/float(aspect)
+        else:
+            xrange = 1
         xlim = (0, xrange)
         grad = np.linspace(ticks[0], ticks[-1], 500, endpoint=True)
         im = np.vstack((grad,grad)).T
-        if not flipspine:
-            adjust_spines(ax,['right'], yticks=ticks)
-        else:
-            adjust_spines(ax,['left'], yticks=ticks)
+        if show_spine:
+            if not flipspine:
+                adjust_spines(ax,['right'], yticks=ticks)
+            else:
+                adjust_spines(ax,['left'], yticks=ticks)
         if ticklabels is not None:
             ax.set_yticklabels(ticklabels)
-
+    
+    if not show_spine:
+        adjust_spines(ax,[])
     # make image
     cmap = plt.get_cmap(colormap)
     ax.imshow(  im, 
@@ -959,7 +1017,15 @@ def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect=20, or
                 extent=(xlim[0], xlim[-1], ylim[0], ylim[-1]), 
                 origin='lower', 
                 interpolation='bicubic')
-                
+    
+    ax.set_xlim(xlim[0], xlim[-1])
+    ax.set_ylim(ylim[0], ylim[-1])
+    
+    if aspect is not 'auto':
+        ax.set_aspect('equal')
+    else:
+        ax.set_aspect('auto')
+    
     if filename is not None:
         fig.savefig(filename, format='pdf')
     
@@ -1002,7 +1068,7 @@ def get_circles_for_scatter(x, y, color='black', edgecolor='none', colormap='jet
     
     return cc
     
-def get_ellipses_for_scatter(ax, x, y, color='black', edgecolor='none', colormap='jet', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0):
+def get_ellipses_for_scatter(ax, x, y, color='black', edgecolor='none', colormap='jet', cmap=None, radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0):
     
     # get ellipse size to make it a circle given axes
     x0, y0 = ax.transAxes.transform((ax.get_ylim()[0],ax.get_xlim()[0]))
@@ -1011,9 +1077,10 @@ def get_ellipses_for_scatter(ax, x, y, color='black', edgecolor='none', colormap
     dy = y1-y0
     maxd = max(dx,dy)
     
-    cmap = plt.get_cmap(colormap)
-    if colornorm is not None:
-        colornorm = plt.Normalize(colornorm[0], colornorm[1], clip=True)
+    if cmap is None:
+        cmap = plt.get_cmap(colormap)
+        if colornorm is not None:
+            colornorm = plt.Normalize(colornorm[0], colornorm[1], clip=True)
     
     # setup normalizing for radius scale factor (if used)
     if type(radius) is list or type(radius) is np.array or type(radius) is np.ndarray:
@@ -1047,7 +1114,7 @@ def get_ellipses_for_scatter(ax, x, y, color='black', edgecolor='none', colormap
     
     return cc
 
-def scatter(ax, x, y, color='black', colormap='jet', edgecolor='none', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0, xlim=None, ylim=None, use_ellipses=True): 
+def scatter(ax, x, y, color='black', colormap='jet', cmap=None, edgecolor='none', radius=0.01, colornorm=None, alpha=1, radiusnorm=None, maxradius=1, minradius=0, xlim=None, ylim=None, use_ellipses=True, zorder=0): 
     '''
     Make a colored scatter plot
     
@@ -1084,7 +1151,7 @@ def scatter(ax, x, y, color='black', colormap='jet', edgecolor='none', radius=0.
     ax.set_ylim(ylim)
     
     if use_ellipses:
-        cc = get_ellipses_for_scatter(ax, x, y, color=color, edgecolor=edgecolor, colormap=colormap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
+        cc = get_ellipses_for_scatter(ax, x, y, color=color, edgecolor=edgecolor, colormap=colormap, cmap=cmap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
 
     else:
         cc = get_circles_for_scatter(x, y, color=color, edgecolor=edgecolor, colormap=colormap, radius=radius, colornorm=colornorm, alpha=alpha, radiusnorm=radiusnorm, maxradius=maxradius, minradius=minradius)
