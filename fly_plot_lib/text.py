@@ -2,7 +2,7 @@
 # Original text-wrapping code written by Joe Kington, via StackOverflow
 
 import matplotlib.pyplot as plt
-    
+import matplotlib
     
 def text_box_example():
     text = 'hi am a super long string... alskdjaklsjdhflkajhdsflkjas aksjdfasdl alskdfj asldkfasd lasldkfjasd oaeasdf adglkajdfga adlfj asdf asldf ajsdflksdj asdf asldkja ldsf a asdkfj alskdjf a a alskdfj alkdj awldsf asldf laej fldsf alskdfj alksdf al as as lkdj ladsaslaskdjfalskdjf  alsdk fjlaskdjf laskdj'
@@ -136,7 +136,11 @@ def __min_dist_inside__(point, rotation, box):
 def set_fontsize(fig,fontsize):
     """
     For each text object of a figure fig, set the font size to fontsize
+    fig can also be an axis object
     """
+    if type(fig) != matplotlib.figure.Figure:
+        fig = fig.figure() # it's probably an axis, so grab the figure
+
     def match(artist):
         return artist.__module__ == "matplotlib.text"
 
