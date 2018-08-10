@@ -975,7 +975,7 @@ def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect='auto'
     # horizontal
     if orientation == 'horizontal':
         xlim = (ticks[0],ticks[-1])
-        if aspect is not 'auto':
+        if aspect != 'auto':
             yrange = (ticks[-1]-ticks[0])/float(aspect)
         else:
             yrange = 1
@@ -993,7 +993,7 @@ def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect='auto'
     # vertical
     if orientation == 'vertical':
         ylim = (ticks[0],ticks[-1])
-        if aspect is not 'auto':
+        if aspect != 'auto':
             xrange = (ticks[-1]-ticks[0])/float(aspect)
         else:
             xrange = 1
