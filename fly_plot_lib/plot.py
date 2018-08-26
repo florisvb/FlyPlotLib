@@ -91,11 +91,13 @@ def adjust_spines(ax,spines, spine_locations={}, smart_bounds=True, xticks=None,
     # smart bounds, if possible
     if int(matplotlib.__version__[0]) > 0 and smart_bounds: 
         for loc, spine in ax.spines.items():
+            ticks = None
             if loc in ['left', 'right']:
                 ticks = yticks
             if loc in ['top', 'bottom']:
                 ticks = xticks
-            spine.set_bounds(ticks[0], ticks[-1])
+            if ticks is not None and len(ticks) > 0:
+                spine.set_bounds(ticks[0], ticks[-1])
 
     # turn off ticks where there is no spine
     if 'left' in spines:
