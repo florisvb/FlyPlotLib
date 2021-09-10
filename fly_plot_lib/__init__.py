@@ -1,8 +1,5 @@
-import plot
-import set_params
-import animate
-import text
-import flymath
-import animate_matrix
-import animate_cv
-import colormaps
+from . import plot
+from . import set_params
+from . import text
+from . import flymath
+from . import colormaps

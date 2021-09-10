@@ -20,8 +20,8 @@ def pdf(params={}, presentation='powerpoint'):
         subplot_top = 0.8
         subplot_bottom = 0.2
 
-    print 'Loading rcparams for saving to PDF'
-    print 'NOTE: ipython plotting may not work as expected with these parameters loaded!'
+    print('Loading rcparams for saving to PDF')
+    print('NOTE: ipython plotting may not work as expected with these parameters loaded!')
     default_params = {'backend': 'Agg',
                       'ps.usedistiller': 'xpdf',
                       'ps.fonttype' : 3,
@@ -59,6 +59,6 @@ def pdf(params={}, presentation='powerpoint'):
                       'lines.linewidth': 1.0,
                       'text.usetex': True, 
                       }
-    for key, val in params.items():
+    for key, val in list(params.items()):
         default_params[key] = val
     rcParams.update(default_params) 

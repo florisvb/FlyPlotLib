@@ -417,8 +417,8 @@ def find_object_with_background_subtraction(img, background, mask=None, guess=No
         thresh_adj -= 1
         if thresh_adj+thresh <= 0: # failed to find anything at all!!
             center = original_guess
-            print 'failed to find object!!!'
-            print center, zero
+            print('failed to find object!!!')
+            print(center, zero)
             
             if return_uimg:
                 uimg, relative_zero = get_uimg( img_roi, center-zero, uimg_roi_radius )
