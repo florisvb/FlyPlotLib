@@ -3,8 +3,8 @@
 
 # general imports
 import matplotlib
-print matplotlib.__version__
-print 'recommended version: 1.1.1 or greater'
+#print matplotlib.__version__
+#print 'recommended version: 1.1.1 or greater'
 
 ###################################################################################################
 
@@ -176,7 +176,7 @@ def colorline(ax, x,y,z,linewidth=1, colormap='jet', norm=None, zorder=1, alpha=
         points = np.array([x, y]).T.reshape(-1, 1, 2).astype(float)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
 
-        print segments
+        #print segments
         if hide_nan_indices == True:
             nanindices_x = np.where(np.isnan(x))[0].tolist()
             nanindices_y = np.where(np.isnan(y))[0].tolist()
@@ -360,11 +360,11 @@ def bootstrap_histogram(xdata, bins, normed=False, n=None, return_raw=False):
     hist_mean = np.mean(hist_list, axis=0)
     hist_std = np.std(hist_list, axis=0)
     
-    print 'bootstrapped: '
-    print
-    print hist_mean
-    print
-    print hist_std
+    #print 'bootstrapped: '
+    #print
+    #print hist_mean
+    #print
+    #print hist_std
     
     if return_raw:
         return hist_list
@@ -422,7 +422,7 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
     max_occur = np.max(np.array(max_occur))
     
     if data_from_which_to_calculate_binweights is not None:
-        print 'calculating bin weights'
+        #print 'calculating bin weights'
         binweights = np.histogram(data_from_which_to_calculate_binweights, bins=bins, normed=False)[0].astype(float)
         binweights += np.min(binweights)*1e-10 # to make sure we don't get divide by zero errors
         binweights = binweights**-1
@@ -462,7 +462,7 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
                     data_hist_std /= max_occur
             else:
                 div = float(np.max(data_hist))
-                print div
+                #print div
                 data_hist /= div 
                 if bootstrap_std:
                     data_hist_std /= div
@@ -498,8 +498,8 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
                 try:
                     indices_in_smoothing_range.remove(b)
                 except ValueError:
-                    print 'bin center not in indices list: ', b
-                    print 'indices list: ', indices_in_smoothing_range
+                    #print 'bin center not in indices list: ', b
+                    #print 'indices list: ', indices_in_smoothing_range
                 
             data_hist_filtered = signal.filtfilt(butter_b, butter_a, data_hist[indices_in_smoothing_range])
             interped_bin_centers = np.linspace(bin_centers[indices_in_smoothing_range[0]]-bin_width/2., bin_centers[indices_in_smoothing_range[-1]]+bin_width/2., 100, endpoint=True)
@@ -628,7 +628,7 @@ def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth
         # usebins lets you assign the bins manually, but it's the same range for each x_coordinate
 
     for i, y_data in enumerate(y_data_list):
-        #print len(y_data)
+        ##print len(y_data)
 
         # calc boxplot statistics
         median = np.median(y_data)
@@ -636,7 +636,7 @@ def boxplot(ax, x_data, y_data_list, nbins=50, colormap='YlOrRd', colorlinewidth
         first_quartile = np.median(y_data[ind])
         ind = np.where(y_data>=median)[0].tolist()
         last_quartile = np.median(y_data[ind])
-        #print first_quartile, median, last_quartile
+        ##print first_quartile, median, last_quartile
         
         # find outliers
         ind_sorted = np.argsort(y_data)
@@ -927,7 +927,7 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
             #total = np.sum(img[r,:])
             #if total > 0:
             #    img[r,:] /= float(total)
-            #print mi, ma, np.min(img[r,:]), np.max(img[r,:])
+            ##print mi, ma, np.min(img[r,:]), np.max(img[r,:])
     
     if norm_columns:
         for c in range(img.shape[1]):
@@ -936,13 +936,13 @@ def histogram2d(ax, x, y, bins=100, normed=False, histrange=None, weights=None, 
             ma = np.max(img[:,c])
             if ma != 0:
                 img[:,c] /= ma
-            print mi, ma, np.min(img[:,c]), np.max(img[:,c])
+            #print mi, ma, np.min(img[:,c]), np.max(img[:,c])
     
     if colornorm is not None:
         colornorm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
     else:
         colornorm = matplotlib.colors.Normalize(np.min(np.min(img)), np.max(np.max(img)))
-        print 'color norm: ', np.min(np.min(img)), np.max(np.max(img))
+        #print 'color norm: ', np.min(np.min(img)), np.max(np.max(img))
         
     
     # make the heatmap
