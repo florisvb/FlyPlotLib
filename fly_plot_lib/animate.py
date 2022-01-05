@@ -146,7 +146,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             final_frames = [len(x[0])]
     else:
         #print
-        #print 'Not sure what format x is!'
+        print('Not sure what format x is!')
     
     anim_params.setdefault('final_frames', final_frames)
     anim_params.setdefault('first_frames', first_frames)
