@@ -120,7 +120,7 @@ def dist_point_to_line(pt, linept1, linept2, sign=False):
 ###
 def dist_to_curve(pt, xdata, ydata):
     
-    #print 'ONLY WORKS WITH VERY HIGH RESOLUTION DATA'
+    ##print 'ONLY WORKS WITH VERY HIGH RESOLUTION DATA'
         
     curve = np.hstack((xdata, ydata)).reshape(len(xdata),2)
     ptarr = pt.reshape(1,2)*np.ones_like(curve)
