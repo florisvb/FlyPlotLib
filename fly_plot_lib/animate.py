@@ -107,9 +107,9 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
     # fix format for single trajectories
     if type(x) is list:
         if type(x[0]) is list or type(x[0]) is np.ndarray:
-            print
-            print type(x[0])
-            print str(len(x)) + ' flies!'
+            #print
+            #print type(x[0])
+            #print str(len(x)) + ' flies!'
             
             if sync_frames is not None:
                 largest_sync_frame = np.max(sync_frames)
@@ -133,10 +133,10 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             for i, xi in enumerate(x):
                 final_frames.append(len(xi))
             for xi in x:
-                print len(xi) 
+                #print len(xi) 
         else:# type(x[0]) is float or type(x[0]) is int or type(x[0]) is long or type(x[0]):
-            print
-            print 'Just one fly!'
+            #print
+            #print 'Just one fly!'
             x = [x]
             y = [y]
             color = [color]
@@ -145,13 +145,13 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             first_frames = [0]
             final_frames = [len(x[0])]
     else:
-        print
-        print 'Not sure what format x is!'
+        #print
+        #print 'Not sure what format x is!'
     
     anim_params.setdefault('final_frames', final_frames)
     anim_params.setdefault('first_frames', first_frames)
         
-    print 'length color: ', len(color), 'n flies: ', len(x)
+    #print 'length color: ', len(color), 'n flies: ', len(x)
         
     if len(color) != len(x):
         only_color = color[0]
@@ -235,7 +235,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             anim_params['frame'] = 1
             anim_params['movie_finished'] = True
         anim_params['frames'].append(anim_params['frame'])
-        print anim_params['frame']
+        #print anim_params['frame']
         for i, fly in enumerate(flies):
             frame_start = anim_params['frame'] - ghost_tail
             frame_end = anim_params['frame']
@@ -287,7 +287,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
                 
             
         if save and not anim_params['movie_finished']:
-            print 'saving frame: ', str(anim_params['frame']), ' -- if the animation you see is strange, do not worry, look at the pngs'
+            #print 'saving frame: ', str(anim_params['frame']), ' -- if the animation you see is strange, do not worry, look at the pngs'
             frame_prefix = '_tmp'
             frame_prefix = os.path.join(save_movie_path, frame_prefix)
             strnum = str(anim_params['frame'])
@@ -299,11 +299,11 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             fig.savefig(frame_name, format='png')
             
         if save and anim_params['movie_finished']:
-            print 
-            print 'Movie finished saving! Close the plot screen now.'
-            print 'PNGs are at: ', save_movie_path
-            print 'To turn the PNGs into a movie, you can run this command from inside the directory with the tmp files: '
-            print 'mencoder \'mf://*.png\' -mf type=png:fps=30 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o animation.avi'
+            #print 
+            #print 'Movie finished saving! Close the plot screen now.'
+            #print 'PNGs are at: ', save_movie_path
+            #print 'To turn the PNGs into a movie, you can run this command from inside the directory with the tmp files: '
+            #print 'mencoder \'mf://*.png\' -mf type=png:fps=30 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o animation.avi'
         
         if images is None:
             return flies
