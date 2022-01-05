@@ -8,7 +8,7 @@ def read_svg_to_axes(svgfile, width_inches=10):
     
     doc = minidom.parse(svgfile)
     
-    print doc.firstChild.getAttribute('width')
+    #print doc.firstChild.getAttribute('width')
     
     width_svg_pixels = float(doc.firstChild.getAttribute('width'))
     height_svg_pixels = float(doc.firstChild.getAttribute('height'))
