@@ -13,7 +13,7 @@ def draw_cv_trajectory(img, x, y, color, thickness):
                 cv2.line(img, (int(x[i]), int(y[i])), (int(x[i+1]), int(y[i+1])), color[i].tolist(), thickness)
             except:
                 pass
-                print 'could not draw trajectory line, length pts: ', len(x), 'i: ', i
+                #print 'could not draw trajectory line, length pts: ', len(x), 'i: ', i
 
     for i in range(len(x)):
         cv2.circle(img, (x[i],y[i]), 1, color=color[i].tolist(), thickness=-1)
@@ -141,7 +141,7 @@ def animate_matrix_2views(x, y, z,
     norm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
     color_mappable = matplotlib.cm.ScalarMappable(norm, plt.get_cmap(colormap))
     
-    print 'synchronizing trajectories'
+    #print 'synchronizing trajectories'
     if colors is None:
         xsync, ysync = synchronize_frames(x, y, sync_frames, n_frames_before_sync_to_show=n_frames_before_sync_to_show)
         xsync, zsync = synchronize_frames(x, z, sync_frames, n_frames_before_sync_to_show=n_frames_before_sync_to_show)
@@ -160,18 +160,18 @@ def animate_matrix_2views(x, y, z,
     #this works:
     #writer = cv2.VideoWriter(filename,cv.CV_FOURCC('P','I','M','1'),sampleRate,(panelsFrames.shape[1],panelsFrames.shape[0]),True) # works for Linux
     # but this works better:
-    print 'initializing writer'
+    #print 'initializing writer'
     mat = stack_mats(mat_xy, mat_xz)
     writer = cv2.VideoWriter(filename,cv2.VideoWriter_fourcc('m','p','4','v'),framerate,(mat.shape[1], mat.shape[0]),True) # works on Linux and Windows
     
-    print filename
+    #print filename
     
     nframes = len(xsync[0])
     
     
     for frame in range(2,nframes):
         s = str(frame) + ' of ' + str(nframes)
-        print s
+        #print s
         mat_xy[:,:,:] = 255
         mat_xz[:,:,:] = 255
         
@@ -201,7 +201,7 @@ def animate_matrix_2views(x, y, z,
             rgba = color_mappable.to_rgba(c,bytes=True)
             rgba[:,[0, 2]] = rgba[:,[2, 0]] # convert from RGB to BGR
             #rgba[:,3] = alpha
-            #print rgba
+            ##print rgba
                         
         if len(x) > 1:
             if colors is None:
@@ -306,7 +306,7 @@ def animate_matrix_3views(x, y, z,
     norm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
     color_mappable = matplotlib.cm.ScalarMappable(norm, plt.get_cmap(colormap))
     
-    print 'synchronizing trajectories'
+    #print 'synchronizing trajectories'
     if colors is None:
         xsync, ysync = synchronize_frames(x, y, sync_frames, n_frames_before_sync_to_show=n_frames_before_sync_to_show)
         xsync, zsync = synchronize_frames(x, z, sync_frames, n_frames_before_sync_to_show=n_frames_before_sync_to_show)
@@ -325,17 +325,17 @@ def animate_matrix_3views(x, y, z,
     #this works:
     #writer = cv2.VideoWriter(filename,cv.CV_FOURCC('P','I','M','1'),sampleRate,(panelsFrames.shape[1],panelsFrames.shape[0]),True) # works for Linux
     # but this works better:
-    print 'initializing writer'
+    #print 'initializing writer'
     mat = stack_mats(mat_xy, mat_xz, mat_yz)
     writer = cv2.VideoWriter(filename,cv2.VideoWriter_fourcc('m','p','4','v'),framerate,(mat.shape[1], mat.shape[0]),True) # works on Linux and Windows
     
-    print filename
+    #print filename
     
     nframes = len(xsync[0])
     
     for frame in range(2,nframes):
         s = str(frame) + ' of ' + str(nframes)
-        print s
+        #print s
         mat_xy[:,:,:] = 255
         mat_xz[:,:,:] = 255
         mat_yz[:,:,:] = 255
@@ -368,7 +368,7 @@ def animate_matrix_3views(x, y, z,
             rgba = color_mappable.to_rgba(c,bytes=True)
             rgba[:,[0, 2]] = rgba[:,[2, 0]] # convert from RGB to BGR
             #rgba[:,3] = alpha
-            #print rgba
+            ##print rgba
                         
         if len(x) > 1:
             if colors is None:
