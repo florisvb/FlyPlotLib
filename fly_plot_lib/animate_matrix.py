@@ -91,7 +91,7 @@ def animate_matrix(x, y, colors=None, xlim=[0,1], ylim=[0,1], resolution=0.005, 
     norm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
     color_mappable = matplotlib.cm.ScalarMappable(norm, plt.get_cmap(colormap))
     
-    print 'synchronizing trajectories'
+    #print 'synchronizing trajectories'
     if colors is None:
         xsync, ysync = synchronize_frames(x, y, sync_frames, n_frames_before_sync_to_show=n_frames_before_sync_to_show)
         xsync = np.array(xsync)
@@ -106,15 +106,15 @@ def animate_matrix(x, y, colors=None, xlim=[0,1], ylim=[0,1], resolution=0.005, 
     #this works:
     #writer = cv2.VideoWriter(filename,cv.CV_FOURCC('P','I','M','1'),sampleRate,(panelsFrames.shape[1],panelsFrames.shape[0]),True) # works for Linux
     # but this works better:
-    print 'initializing writer'
+    #print 'initializing writer'
     writer = cv2.VideoWriter(filename,cv.CV_FOURCC('m','p','4','v'),framerate,(mat.shape[1], mat.shape[0]),True) # works on Linux and Windows
     
-    print filename
+    #print filename
     
     nframes = len(xsync[0])
     for frame in range(nframes):
         s = str(frame) + ' of ' + str(nframes)
-        print s
+        #print s
         mat[:,:,:] = 255
         if len(static_indices) > 0:
             c = [static_color for i in range(len(static_indices[0]))]
@@ -210,7 +210,7 @@ def animate_matrix_2views(x, y, z,
     norm = matplotlib.colors.Normalize(colornorm[0], colornorm[1])
     color_mappable = matplotlib.cm.ScalarMappable(norm, plt.get_cmap(colormap))
     
-    print 'synchronizing trajectories'
+    #print 'synchronizing trajectories'
     if colors is None:
         xsync, ysync = synchronize_frames(x, y, sync_frames, n_frames_before_sync_to_show=n_frames_before_sync_to_show)
         xsync, zsync = synchronize_frames(x, z, sync_frames, n_frames_before_sync_to_show=n_frames_before_sync_to_show)
@@ -229,16 +229,16 @@ def animate_matrix_2views(x, y, z,
     #this works:
     #writer = cv2.VideoWriter(filename,cv.CV_FOURCC('P','I','M','1'),sampleRate,(panelsFrames.shape[1],panelsFrames.shape[0]),True) # works for Linux
     # but this works better:
-    print 'initializing writer'
+    #print 'initializing writer'
     mat = stack_mats(mat_xy, mat_xz)
     writer = cv2.VideoWriter(filename,cv.CV_FOURCC('m','p','4','v'),framerate,(mat.shape[1], mat.shape[0]),True) # works on Linux and Windows
     
-    print filename
+    #print filename
     
     nframes = len(xsync[0])
     for frame in range(nframes):
         s = str(frame) + ' of ' + str(nframes)
-        print s
+        #print s
         mat_xy[:,:,:] = 255
         mat_xz[:,:,:] = 255
         
