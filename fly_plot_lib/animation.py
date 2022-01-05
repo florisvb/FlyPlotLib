@@ -59,7 +59,7 @@ def play_movie_3_axes(x, y, z, color, orientation=None, save=False, save_movie_p
         for i, image in enumerate(images):
             if image is not None:
                 if image_extents[i] is None:
-                    print 'Must include extent for image'
+                    #print 'Must include extent for image'
                     raise(ValueError)
                     
                 if type(image) is list:
@@ -100,7 +100,7 @@ def play_movie_3_axes(x, y, z, color, orientation=None, save=False, save_movie_p
         #y = anim_params['y']
         #z = anim_params['z']
         #color = anim_params['color']
-        print anim_params['frame']
+        #print anim_params['frame']
         
         anim_params['frame'] += 1 + nskip
         frame_end = anim_params['frame'] + ghost_tail
@@ -120,7 +120,7 @@ def play_movie_3_axes(x, y, z, color, orientation=None, save=False, save_movie_p
         flies_yz.set_facecolors(colors)
         
         if save:
-            print anim_params['frame']
+            #print anim_params['frame']
             frame_prefix = '_tmp'
             frame_prefix = os.path.join(save_movie_path, frame_prefix)
             strnum = str(anim_params['frame'])
