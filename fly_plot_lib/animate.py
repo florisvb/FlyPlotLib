@@ -133,7 +133,7 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             for i, xi in enumerate(x):
                 final_frames.append(len(xi))
             for xi in x:
-                #print len(xi) 
+                print(len(xi)) 
         else:# type(x[0]) is float or type(x[0]) is int or type(x[0]) is long or type(x[0]):
             #print
             #print 'Just one fly!'
