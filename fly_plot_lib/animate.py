@@ -300,10 +300,10 @@ def play_movie(x, y, images=None, extent=None, aspect='equal', color='blue', edg
             
         if save and anim_params['movie_finished']:
             #print 
-            #print 'Movie finished saving! Close the plot screen now.'
-            #print 'PNGs are at: ', save_movie_path
-            #print 'To turn the PNGs into a movie, you can run this command from inside the directory with the tmp files: '
-            #print 'mencoder \'mf://*.png\' -mf type=png:fps=30 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o animation.avi'
+            print('Movie finished saving! Close the plot screen now.')
+            print('PNGs are at: ', save_movie_path)
+            print('To turn the PNGs into a movie, you can run this command from inside the directory with the tmp files: ')
+            print('mencoder \'mf://*.png\' -mf type=png:fps=30 -ovc lavc -lavcopts vcodec=mpeg4 -oac copy -o animation.avi')
         
         if images is None:
             return flies
