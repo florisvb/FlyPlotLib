@@ -498,8 +498,8 @@ def histogram(ax, data_list, bins=10, bin_width_ratio=0.6, colors='green', edgec
                 try:
                     indices_in_smoothing_range.remove(b)
                 except ValueError:
-                    #print('bin center not in indices list: ', b)
-                    #print('indices list: ', indices_in_smoothing_range)
+                    print('bin center not in indices list: ', b)
+                    print('indices list: ', indices_in_smoothing_range)
                 
             data_hist_filtered = signal.filtfilt(butter_b, butter_a, data_hist[indices_in_smoothing_range])
             interped_bin_centers = np.linspace(bin_centers[indices_in_smoothing_range[0]]-bin_width/2., bin_centers[indices_in_smoothing_range[-1]]+bin_width/2., 100, endpoint=True)
