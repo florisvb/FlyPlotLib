@@ -746,7 +746,10 @@ def get_optimized_scatter_distance(y_data, xwidth, y_scale_factor=1, seed=0, res
     return np.array(xvals)
         
     
-def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor='none', flipxy=False, shading='95conf', alpha=0.3, markersize=5, linewidth=1, marker_linewidth=0, use='median', optimize_scatter_distance=False, optimize_scatter_distance_resolution=20, optimize_scatter_distance_y_scale=1, hide_markers=False, scatter_color=None, scatter_cmap='jet', scatter_norm_minmax=[0,1], random_scatter=True, rasterized=True):
+def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor='none', flipxy=False, shading='95conf', alpha=0.3, marker='o', 
+    markersize=5, linewidth=1, marker_linewidth=0, use='median', markeredgewidth=1,
+    optimize_scatter_distance=False, optimize_scatter_distance_resolution=20, optimize_scatter_distance_y_scale=1, 
+    hide_markers=False, scatter_color=None, scatter_cmap='jet', scatter_norm_minmax=[0,1], random_scatter=True, rasterized=True):
     '''
     shading - can show quartiles, or 95% conf, or none
     optimize_scatter_distance - maximize distance between points, instead of randomizing. May take a long time.
@@ -779,26 +782,26 @@ def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor=
             if shading != 'none':
                 ax.hlines([mean], x-xwidth, x+xwidth, colors=[color], linewidth=linewidth)
             if shading == 'quartiles':
-                ax.fill_between([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=alpha)
+                ax.fill_between([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor=edgecolor, alpha=alpha)
             elif shading == '95conf':
-                ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=alpha)
+                ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor=edgecolor, alpha=alpha)
             if not hide_markers:
                 if scatter_color is not None: # len is a check to rgb tuples
-                    ax.scatter(xvals, y_data, s=markersize, c=scatter_color, marker='o', cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
+                    ax.scatter(xvals, y_data, s=markersize, c=scatter_color, marker=marker, cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
                 else:
-                    ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, rasterized=rasterized)
+                    ax.plot(xvals, y_data, marker, markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, markeredgewidth=markeredgewidth, rasterized=rasterized)
         else:
             if shading != 'none':
                 ax.vlines([mean], x-xwidth, x+xwidth, colors=[color], linewidth=linewidth)
             if shading == 'quartiles':
-                ax.fill_betweenx([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=alpha)
+                ax.fill_betweenx([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor=edgecolor, alpha=alpha)
             elif shading == '95conf':
-                ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=alpha)
+                ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor=edgecolor, alpha=alpha)
             if not hide_markers:
                 if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
-                    ax.scatter(y_data, xvals, s=markersize, c=scatter_color, marker='o', cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
+                    ax.scatter(y_data, xvals, s=markersize, c=scatter_color, marker=marker, cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
                 else:
-                    ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, rasterized=rasterized)
+                    ax.plot(y_data, xvals, marker, markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, markeredgewidth=markeredgewidth, rasterized=rasterized)
             
     else:
         for i in range(len(x)):
@@ -826,26 +829,26 @@ def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor=
                 if shading != 'none':
                     ax.hlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color], linewidth=linewidth)
                 if shading == 'quartiles':
-                    ax.fill_between([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=alpha)
+                    ax.fill_between([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor=edgecolor, alpha=alpha)
                 elif shading == '95conf':
-                    ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=alpha)
+                    ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor=edgecolor, alpha=alpha)
                 if not hide_markers:
                     if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
-                        ax.scatter(xvals, y_data, s=markersize, c=scatter_color, marker='o', cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
+                        ax.scatter(xvals, y_data, s=markersize, c=scatter_color, marker=marker, cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
                     else:
-                        ax.plot(xvals, y_data, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, rasterized=rasterized)
+                        ax.plot(xvals, y_data, marker, markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, markeredgewidth=markeredgewidth, rasterized=rasterized)
             else:
                 if shading != 'none':
                     ax.vlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color], linewidth=linewidth)
                 if shading == 'quartiles':
-                    ax.fill_betweenx([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor='none', alpha=alpha)
+                    ax.fill_betweenx([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor=edgecolor, alpha=alpha)
                 elif shading == '95conf':
-                    ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor='none', alpha=alpha)
+                    ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor=edgecolor, alpha=alpha)
                 if not hide_markers:
                     if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
-                        ax.scatter(y_data, xvals, s=markersize, c=scatter_color, marker='o', cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
+                        ax.scatter(y_data, xvals, s=markersize, c=scatter_color, marker=marker, cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
                     else:
-                        ax.plot(y_data, xvals, 'o', markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, rasterized=rasterized)
+                        ax.plot(y_data, xvals, marker, markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, markeredgewidth=markeredgewidth, rasterized=rasterized)
                 
 ###################################################################################################
 # 2D "heatmap" Histogram
