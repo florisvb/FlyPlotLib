@@ -745,6 +745,108 @@ def get_optimized_scatter_distance(y_data, xwidth, y_scale_factor=1, seed=0, res
     
     return np.array(xvals)
         
+def scatter_box_violin_distribution(ax, x, y_data, hist_counts, hist_bins, xwidth=0.3, ywidth=0.1, color='black', edgecolor='none', flipxy=False, shading='95conf', alpha=0.3, marker='o', 
+    markersize=5, linewidth=1, marker_linewidth=0, use='median', markeredgewidth=1,
+    hide_markers=False, scatter_color=None, scatter_cmap='jet', scatter_norm_minmax=[0,1], rasterized=True):
+    '''
+    shading - can show quartiles, or 95% conf, or none
+    optimize_scatter_distance - maximize distance between points, instead of randomizing. May take a long time.
+    '''  
+    if not hasattr(x,'__len__'):
+        if use=='median':
+            mean = np.median(y_data)
+        elif use=='mean':
+            mean = np.mean(y_data)
+        y_data.sort()
+        n = len(y_data)
+        bottom_quartile = y_data[int(.25*n)]
+        top_quartile = y_data[int(.75*n)]
+
+        hist_bins[0] = hist_bins[0] - 0.1
+        digitized = np.digitize(y_data, hist_bins, right=True) -1
+        width = [hist_counts[d] for d in digitized]
+        width = np.array(width) / float(np.max(width)) * xwidth
+        
+        xvals = [x+np.random.random()*width[yi]*2-width[yi] for yi in range(len(y_data))]
+
+        if shading == '95conf':
+            import flystat.resampling
+            conf_interval = flystat.resampling.bootstrap_confidence_intervals_from_data(y_data, use=use)
+            
+        
+        if not flipxy:  
+            if shading != 'none':
+                ax.hlines([mean], x-xwidth, x+xwidth, colors=[color], linewidth=linewidth)
+            if shading == 'quartiles':
+                ax.fill_between([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor=edgecolor, alpha=alpha)
+            elif shading == '95conf':
+                ax.fill_between([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor=edgecolor, alpha=alpha)
+            if not hide_markers:
+                if scatter_color is not None: # len is a check to rgb tuples
+                    ax.scatter(xvals, y_data, s=markersize, c=scatter_color, marker=marker, cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
+                else:
+                    ax.plot(xvals, y_data, marker, markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, markeredgewidth=markeredgewidth, rasterized=rasterized)
+        else:
+            if shading != 'none':
+                ax.vlines([mean], x-xwidth, x+xwidth, colors=[color], linewidth=linewidth)
+            if shading == 'quartiles':
+                ax.fill_betweenx([x-xwidth,x+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor=edgecolor, alpha=alpha)
+            elif shading == '95conf':
+                ax.fill_betweenx([x-xwidth,x+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor=edgecolor, alpha=alpha)
+            if not hide_markers:
+                if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
+                    ax.scatter(y_data, xvals, s=markersize, c=scatter_color, marker=marker, cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
+                else:
+                    ax.plot(y_data, xvals, marker, markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, markeredgewidth=markeredgewidth, rasterized=rasterized)
+            
+    else:
+        for i in range(len(x)):
+            if use=='median':
+                mean = np.median(y_data[i])
+            elif use=='mean':
+                mean = np.mean(y_data[i])
+            y_data[i].sort()
+            n = len(y_data[i])
+            bottom_quartile = y_data[i][int(.25*n)]
+            top_quartile = y_data[i][int(.75*n)]
+
+            hist_bins[i][0] = hist_bins[i][0] - 0.1
+            digitized = np.digitize(y_data[i], hist_bins[i], right=True) -1
+            width = [hist_counts[i][d] for d in digitized]
+            width = np.array(width) / float(np.max(width)) * xwidth
+            
+            xvals = [x[i]+np.random.random()*width[yi]*2-width[yi] for yi in range(len(y_data[i]))]
+
+            
+            if shading == '95conf':
+                import flystat.resampling
+                conf_interval = flystat.resampling.bootstrap_confidence_intervals_from_data(y_data[i], use=use)
+            
+            if not flipxy:
+                if shading != 'none':
+                    ax.hlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color], linewidth=linewidth)
+                if shading == 'quartiles':
+                    ax.fill_between([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor=edgecolor, alpha=alpha)
+                elif shading == '95conf':
+                    ax.fill_between([x[i]-xwidth,x[i]+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor=edgecolor, alpha=alpha)
+                if not hide_markers:
+                    if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
+                        ax.scatter(xvals, y_data[i], s=markersize, c=scatter_color, marker=marker, cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
+                    else:
+                        ax.plot(xvals, y_data[i], marker, markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, markeredgewidth=markeredgewidth, rasterized=rasterized)
+            else:
+                if shading != 'none':
+                    ax.vlines([mean], x[i]-xwidth, x[i]+xwidth, colors=[color], linewidth=linewidth)
+                if shading == 'quartiles':
+                    ax.fill_betweenx([x[i]-xwidth,x[i]+xwidth], [bottom_quartile, bottom_quartile], [top_quartile, top_quartile], facecolor=color, edgecolor=edgecolor, alpha=alpha)
+                elif shading == '95conf':
+                    ax.fill_betweenx([x[i]-xwidth,x[i]+xwidth], [conf_interval[0], conf_interval[0]], [conf_interval[1], conf_interval[1]], facecolor=color, edgecolor=edgecolor, alpha=alpha)
+                if not hide_markers:
+                    if hasattr(color, '__iter__') and len(color) > 3: # len is a check to rgb tuples
+                        ax.scatter(y_data[i], xvals, s=markersize, c=scatter_color, marker=marker, cmap=scatter_cmap, linewidths=marker_linewidth, edgecolors=edgecolor, vmin=scatter_norm_minmax[0], vmax=scatter_norm_minmax[1], rasterized=rasterized)
+                    else:
+                        ax.plot(y_data[i], xvals, marker, markerfacecolor=color, markeredgecolor=edgecolor, markersize=markersize, markeredgewidth=markeredgewidth, rasterized=rasterized)
+
     
 def scatter_box(ax, x, y_data, xwidth=0.3, ywidth=0.1, color='black', edgecolor='none', flipxy=False, shading='95conf', alpha=0.3, marker='o', 
     markersize=5, linewidth=1, marker_linewidth=0, use='median', markeredgewidth=1,
@@ -972,7 +1074,7 @@ def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect='auto'
     if ticks is None:
         ticks = np.linspace(-1,1,5,endpoint=True)
     
-    if aspect is not 'auto':
+    if aspect != 'auto':
         ax.set_aspect('equal')
     else:
         ax.set_aspect('auto')
@@ -1026,7 +1128,7 @@ def colorbar(ax=None, ticks=None, ticklabels=None, colormap='jet', aspect='auto'
     ax.set_xlim(xlim[0], xlim[-1])
     ax.set_ylim(ylim[0], ylim[-1])
     
-    if aspect is not 'auto':
+    if aspect != 'auto':
         ax.set_aspect('equal')
     else:
         ax.set_aspect('auto')
